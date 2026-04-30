@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyi
+*.egg
+*.egg-info/
+dist/
+build/
+# Virtual environments
+venv/
+.env/
+.env
+# IDE files
+.vscode/
+.idea/
+# OS files
+.DS_Store
+Thumbs.db
+# Logs
+*.log
+# PyCharm
+*.iml
+# Jupyter
+.ipynb_checkpoints/
+# dotenv
+.env.local
+.env.*.local
+# Ignore OneDrive temp files
+~$*
