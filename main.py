@@ -15,9 +15,9 @@ if not api_key:
 # Initialize OpenAI client
 client = OpenAI(api_key=api_key)
 
-st.set_page_config(page_title="VA AI Assistant", layout="wide")
+st.set_page_config(page_title="TraqMate AI Assistant", layout="wide")
 
-st.title("💻 VA AI Assistant")
+st.title("💻 TraqMate AI Assistant")
 st.caption("Generate emails, replies, and reports instantly")
 
 # Sidebar
