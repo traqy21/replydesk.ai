@@ -55,11 +55,14 @@ The app will be available at `http://localhost:8501`.
 ├── main.py              # Entry point — wires everything together
 ├── config.py            # Environment loading, OpenAI client, app constants
 ├── prompts.py           # Prompt templates for each tool
-├── ui.py                # Streamlit UI components (sidebar, input, output)
+├── ui.py                # Streamlit UI components (sidebar, input, output, history)
+├── theme.py             # Dark/light theme and responsive CSS
 ├── requirements.txt     # Python dependencies
 ├── Dockerfile           # Python 3.12-slim image, runs Streamlit
 ├── docker-compose.yml   # Single-service compose config
 ├── .env.example         # Template for the required OPENAI_API_KEY
+├── documentations/      # Project documentation
+│   └── tasklist.md      # Development checklist
 └── .gitignore           # Standard Python/IDE/OS ignores
 ```
 
@@ -67,7 +70,8 @@ The app will be available at `http://localhost:8501`.
 |--------|----------------|
 | `config.py` | Loads `.env`, validates the API key, creates the OpenAI client, and defines constants (`APP_NAME`, `MODEL`). Single place to change the model or app name. |
 | `prompts.py` | Contains `build_prompt()`. Add new tools by adding another `elif` block here. |
-| `ui.py` | Reusable UI components: session state init, sidebar, input form, and output display. Keeps presentation separate from business logic. |
+| `ui.py` | Reusable UI components: session state, sidebar with history, input form, progress bar, and editable output. |
+| `theme.py` | Dark/light theme toggle and responsive CSS for mobile layouts. |
 | `main.py` | The orchestrator. Imports from the other modules, handles the generate flow. |
 
 ## Features
