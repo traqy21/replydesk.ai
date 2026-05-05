@@ -561,6 +561,13 @@ def render_auth_page():
         _update_last_activity()
         return True
 
+    # Back button to return to landing page
+    if st.button("← Back to Home", key="back_to_landing_btn", type="secondary"):
+        st.session_state.show_landing = True
+        st.rerun()
+
+    st.write("")
+
     # Center the form in a narrow column
     _, col, _ = st.columns([1, 1.4, 1])
 

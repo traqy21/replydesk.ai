@@ -19,6 +19,9 @@ init_session_state()
 init_profile_state()
 seed_default_users()
 
+# Apply theme early so landing page is also themed
+apply_theme()
+
 # ─────────────────────────────────────────────
 # Password Reset Flow (via ?reset_token= param)
 # ─────────────────────────────────────────────
@@ -29,11 +32,28 @@ if reset_token or st.session_state.get("reset_flow") == "request":
     render_reset(token=reset_token)
     st.stop()
 
+# ─────────────────────────────────────────────
+# Landing Page (unauthenticated visitors)
+# ─────────────────────────────────────────────
+if "show_landing" not in st.session_state:
+    st.session_state.show_landing = True
+
+if not st.session_state.get("authenticated") and st.session_state.show_landing:
+    # Top nav bar for landing page
+    nav_left, nav_right = st.columns([3, 1])
+    with nav_left:
+        st.image("assets/logo-wide.svg", width=160)
+    with nav_right:
+        if st.button("🔑 Log In / Register", use_container_width=True, key="nav_login_btn"):
+            st.session_state.show_landing = False
+            st.rerun()
+
+    from pages.landing import render as render_landing
+    render_landing()
+    st.stop()
+
 if "current_page" not in st.session_state:
     st.session_state.current_page = "Tools"
-
-# Apply theme
-apply_theme()
 
 # Authentication gate
 if not render_auth_page():
@@ -66,7 +86,11 @@ st.sidebar.divider()
 display = st.session_state.display_name or st.session_state.email
 st.sidebar.markdown(f"👤 **{display}**")
 st.sidebar.caption(f"📋 {st.session_state.job_position}")
-st.sidebar.caption(f"⚡ {get_remaining_generations()} remaining today")
+
+remaining = get_remaining_generations()
+used = 50 - remaining
+if used > 0:
+    st.sidebar.caption(f"⚡ {remaining} generations remaining today")
 
 st.sidebar.divider()
 
