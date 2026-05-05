@@ -240,6 +240,39 @@ def register_user(email: str, job_position: str, password: str, confirm_password
     return True, "Registration successful! You can now log in."
 
 
+def seed_default_users():
+    """Seed default users if they don't already exist. Called once on startup."""
+    defaults = [
+        {
+            "email": "admin@replydesk.ai",
+            "password": "admin123",
+            "job_position": "Business Owner",
+            "display_name": "Admin",
+        },
+    ]
+
+    for user in defaults:
+        email = user["email"].lower()
+        if _use_dynamodb():
+            if not _user_exists_dynamo(email):
+                _save_user_dynamo({
+                    "email": email,
+                    "job_position": user["job_position"],
+                    "display_name": user["display_name"],
+                    "password_hash": _hash_password(user["password"]),
+                })
+        else:
+            users = _load_users_json()
+            if email not in users:
+                users[email] = {
+                    "email": email,
+                    "job_position": user["job_position"],
+                    "display_name": user["display_name"],
+                    "password_hash": _hash_password(user["password"]),
+                }
+                _save_users_json(users)
+
+
 def login_user(email: str, password: str) -> tuple[bool, str]:
     """Authenticate a user by email. Returns (success, message)."""
     if not email or not password:

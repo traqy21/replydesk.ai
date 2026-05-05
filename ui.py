@@ -16,6 +16,8 @@ def init_session_state():
         st.session_state.history = []
     if "theme" not in st.session_state:
         st.session_state.theme = "Light"
+    if "last_tone" not in st.session_state:
+        st.session_state.last_tone = ""
 
 
 def render_input():
@@ -23,6 +25,12 @@ def render_input():
     st.subheader("Input")
     user_input = st.text_area("Paste client message or notes here")
     tone = st.selectbox("Tone", TONES)
+
+    # Clear output when tone changes
+    if st.session_state.get("last_tone") and st.session_state.last_tone != tone:
+        st.session_state.generated_result = ""
+    st.session_state.last_tone = tone
+
     generate = st.button("✨ Generate", use_container_width=True)
     return user_input, tone, generate
 

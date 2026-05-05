@@ -5,15 +5,16 @@ import streamlit as st
 from config import APP_NAME, APP_CAPTION
 from ui import init_session_state
 from theme import apply_theme
-from auth import render_auth_page, logout, get_remaining_generations
+from auth import render_auth_page, logout, get_remaining_generations, seed_default_users
 from profile import init_profile_state
 
 # Page config
-st.set_page_config(page_title=APP_NAME, layout="wide")
+st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="assets/logo.svg")
 
 # Initialize state
 init_session_state()
 init_profile_state()
+seed_default_users()
 
 if "current_page" not in st.session_state:
     st.session_state.current_page = "Tools"
