@@ -29,7 +29,7 @@ if not render_auth_page():
     st.stop()
 
 # Header
-st.title(f"💻 {APP_NAME}")
+st.markdown("### ✉️ Replydesk AI")
 st.caption(APP_CAPTION)
 
 # User info in sidebar
@@ -41,6 +41,17 @@ st.sidebar.divider()
 
 # Render UI
 tool = render_sidebar()
+
+# Display selected tool in main content
+TOOL_DESCRIPTIONS = {
+    "Client Reply": "Craft a professional response to a client message.",
+    "Email Generator": "Draft a structured email from your notes or brief.",
+    "Task Summary": "Condense your notes into clear, actionable bullet points.",
+    "Daily Report": "Generate a formatted end-of-day status report.",
+}
+st.markdown(f"#### 🛠️ {tool}")
+st.caption(TOOL_DESCRIPTIONS.get(tool, ""))
+
 user_input, tone, generate = render_input()
 
 # Handle generation

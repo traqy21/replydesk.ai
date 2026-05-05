@@ -9,7 +9,7 @@ load_dotenv(dotenv_path)
 
 # App metadata
 APP_NAME = "Replydesk AI"
-APP_CAPTION = "Generate emails, replies, and reports instantly"
+APP_CAPTION = "Your AI-powered assistant for professional communication"
 MODEL = "gpt-4o-mini"
 
 # OpenAI setup

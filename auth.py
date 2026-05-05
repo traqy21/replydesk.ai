@@ -136,8 +136,8 @@ def render_auth_page():
     if st.session_state.authenticated:
         return True
 
-    st.title("💻 Replydesk AI")
-    st.caption("Generate emails, replies, and reports instantly")
+    st.markdown("### ✉️ Replydesk AI")
+    st.caption("Your AI-powered assistant for professional communication")
 
     # Tabs for login and register
     tab_login, tab_register = st.tabs(["🔑 Login", "📝 Register"])
