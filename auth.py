@@ -561,49 +561,53 @@ def render_auth_page():
         _update_last_activity()
         return True
 
-    st.image("assets/logo-wide.svg", use_container_width=False, width=300)
-    st.caption("Your AI-powered assistant for professional communication")
+    # Center the form in a narrow column
+    _, col, _ = st.columns([1, 1.4, 1])
 
-    # Tabs for login and register
-    tab_login, tab_register = st.tabs(["🔑 Login", "📝 Register"])
+    with col:
+        st.image("assets/logo-wide.svg", use_container_width=True)
+        # st.caption("Your AI-powered assistant for professional communication")
+        st.write("")
 
-    with tab_login:
-        st.subheader("Welcome back")
-        login_email = st.text_input("Email Address", key="login_email")
-        login_password = st.text_input("Password", type="password", key="login_password")
+        # Tabs for login and register
+        tab_login, tab_register = st.tabs(["🔑 Login", "📝 Register"])
 
-        if st.button("Log In", use_container_width=True, key="login_btn"):
-            success, message = login_user(login_email, login_password)
-            if success:
-                st.session_state.authenticated = True
-                st.session_state.email = login_email
-                _update_last_activity()
-                # Load user profile into session
-                user_data = _get_user_profile(login_email)
-                st.session_state.username = user_data.get("email", login_email)
-                st.session_state.job_position = user_data.get("job_position", "Virtual Assistant")
-                st.session_state.display_name = user_data.get("display_name", "")
+        with tab_login:
+            login_email = st.text_input("Email Address", key="login_email", placeholder="you@example.com")
+            login_password = st.text_input("Password", type="password", key="login_password", placeholder="••••••••")
+
+            st.write("")
+            if st.button("Log In", use_container_width=True, key="login_btn", type="primary"):
+                success, message = login_user(login_email, login_password)
+                if success:
+                    st.session_state.authenticated = True
+                    st.session_state.email = login_email
+                    _update_last_activity()
+                    user_data = _get_user_profile(login_email)
+                    st.session_state.username = user_data.get("email", login_email)
+                    st.session_state.job_position = user_data.get("job_position", "Virtual Assistant")
+                    st.session_state.display_name = user_data.get("display_name", "")
+                    st.rerun()
+                else:
+                    st.error(message)
+
+            if st.button("Forgot password?", use_container_width=True, key="forgot_pw_btn", type="secondary"):
+                st.session_state.reset_flow = "request"
                 st.rerun()
-            else:
-                st.error(message)
 
-        if st.button("🔑 Forgot password?", use_container_width=True, key="forgot_pw_btn", type="secondary"):
-            st.session_state.reset_flow = "request"
-            st.rerun()
+        with tab_register:
+            reg_email = st.text_input("Email Address", key="reg_email", placeholder="you@example.com")
+            reg_job = st.selectbox("Job Position", JOB_POSITIONS, key="reg_job")
+            reg_password = st.text_input("Password", type="password", key="reg_password", placeholder="Min. 6 characters")
+            reg_confirm = st.text_input("Confirm Password", type="password", key="reg_confirm", placeholder="Repeat password")
 
-    with tab_register:
-        st.subheader("Create an account")
-        reg_email = st.text_input("Email Address", key="reg_email")
-        reg_job = st.selectbox("Job Position", JOB_POSITIONS, key="reg_job")
-        reg_password = st.text_input("Password", type="password", key="reg_password")
-        reg_confirm = st.text_input("Confirm Password", type="password", key="reg_confirm")
-
-        if st.button("Register", use_container_width=True, key="register_btn"):
-            success, message = register_user(reg_email, reg_job, reg_password, reg_confirm)
-            if success:
-                st.success(message)
-                st.info("👉 Switch to the **Login** tab above to sign in.")
-            else:
-                st.error(message)
+            st.write("")
+            if st.button("Create Account", use_container_width=True, key="register_btn", type="primary"):
+                success, message = register_user(reg_email, reg_job, reg_password, reg_confirm)
+                if success:
+                    st.success(message)
+                    st.info("👉 Switch to the **Login** tab to sign in.")
+                else:
+                    st.error(message)
 
     return False
