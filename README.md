@@ -57,6 +57,7 @@ The app will be available at `http://localhost:8501`.
 ├── prompts.py           # Prompt templates for each tool
 ├── ui.py                # Streamlit UI components (sidebar, input, output, history)
 ├── theme.py             # Dark/light theme and responsive CSS
+├── auth.py              # User login and registration
 ├── requirements.txt     # Python dependencies
 ├── Dockerfile           # Python 3.12-slim image, runs Streamlit
 ├── docker-compose.yml   # Single-service compose config
@@ -72,6 +73,7 @@ The app will be available at `http://localhost:8501`.
 | `prompts.py` | Contains `build_prompt()`. Add new tools by adding another `elif` block here. |
 | `ui.py` | Reusable UI components: session state, sidebar with history, input form, progress bar, and editable output. |
 | `theme.py` | Dark/light theme toggle and responsive CSS for mobile layouts. |
+| `auth.py` | User login and registration with password hashing and JSON file storage. |
 | `main.py` | The orchestrator. Imports from the other modules, handles the generate flow. |
 
 ## Features

@@ -13,6 +13,7 @@ from ui import (
     add_to_history,
 )
 from theme import apply_theme
+from auth import render_auth_page, logout
 
 # Page config
 st.set_page_config(page_title=APP_NAME, layout="wide")
@@ -23,9 +24,20 @@ init_session_state()
 # Apply theme
 apply_theme()
 
+# Authentication gate
+if not render_auth_page():
+    st.stop()
+
 # Header
 st.title(f"💻 {APP_NAME}")
 st.caption(APP_CAPTION)
+
+# User info in sidebar
+st.sidebar.markdown(f"👤 Logged in as **{st.session_state.username}**")
+if st.sidebar.button("🚪 Logout"):
+    logout()
+
+st.sidebar.divider()
 
 # Render UI
 tool = render_sidebar()

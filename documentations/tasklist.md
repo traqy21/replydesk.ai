@@ -21,6 +21,7 @@
 - [x] Input validation (warn if empty input)
 - [x] Error handling on API calls
 - [x] Clear button to reset output
+- [x] User login and registration
 
 ## Code Quality
 
