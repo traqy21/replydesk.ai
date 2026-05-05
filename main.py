@@ -26,25 +26,15 @@ if not render_auth_page():
     st.stop()
 
 # ─────────────────────────────────────────────
-# Sidebar — User info + Navigation
+# Sidebar — Navigation + User info
 # ─────────────────────────────────────────────
 
 # Header
 st.sidebar.markdown(f"### ✉️ {APP_NAME}")
 st.sidebar.caption(APP_CAPTION)
-st.sidebar.divider()
 
-# User info
-display = st.session_state.display_name or st.session_state.email
-st.sidebar.markdown(f"👤 **{display}**")
-st.sidebar.caption(f"📋 {st.session_state.job_position}")
-st.sidebar.caption(f"⚡ {get_remaining_generations()} remaining today")
-
-st.sidebar.divider()
-
-# Navigation
-st.sidebar.subheader("Navigation")
-PAGES = ["🛠️ Tools", "📜 History", "⚙️ Settings", "🔐 Admin"]
+# Navigation (top priority — immediately accessible)
+PAGES = ["🛠️ Tools", "📜 History", "💬 Feedback", "⚙️ Settings", "🔐 Admin"]
 
 for page_label in PAGES:
     page_name = page_label.split(" ", 1)[1]
@@ -56,6 +46,14 @@ for page_label in PAGES:
     ):
         st.session_state.current_page = page_name
         st.rerun()
+
+st.sidebar.divider()
+
+# User info
+display = st.session_state.display_name or st.session_state.email
+st.sidebar.markdown(f"👤 **{display}**")
+st.sidebar.caption(f"📋 {st.session_state.job_position}")
+st.sidebar.caption(f"⚡ {get_remaining_generations()} remaining today")
 
 st.sidebar.divider()
 
@@ -92,6 +90,10 @@ elif st.session_state.current_page == "History":
 
 elif st.session_state.current_page == "Settings":
     from pages.settings import render
+    render()
+
+elif st.session_state.current_page == "Feedback":
+    from pages.feedback import render
     render()
 
 elif st.session_state.current_page == "Admin":

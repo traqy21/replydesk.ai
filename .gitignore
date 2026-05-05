@@ -30,6 +30,7 @@ Thumbs.db
 
 # User data
 users.json
+feedback.json
 
 # Terraform
 terraform/.terraform/
