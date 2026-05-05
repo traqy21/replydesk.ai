@@ -22,6 +22,8 @@
 - [x] Error handling on API calls
 - [x] Clear button to reset output
 - [x] User login and registration
+- [x] User profile (email address, job position)
+- [x] Dynamic prompts based on user's job position
 
 ## Code Quality
 

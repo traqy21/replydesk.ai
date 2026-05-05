@@ -33,7 +33,7 @@ st.title(f"💻 {APP_NAME}")
 st.caption(APP_CAPTION)
 
 # User info in sidebar
-st.sidebar.markdown(f"👤 Logged in as **{st.session_state.username}**")
+st.sidebar.markdown(f"👤 **{st.session_state.email}**")
 if st.sidebar.button("🚪 Logout"):
     logout()
 
@@ -48,7 +48,7 @@ if generate and user_input:
     progress_bar = render_progress()
 
     try:
-        prompt = build_prompt(tool, user_input, tone)
+        prompt = build_prompt(tool, user_input, tone, st.session_state.job_position)
 
         response = client.chat.completions.create(
             model=MODEL,

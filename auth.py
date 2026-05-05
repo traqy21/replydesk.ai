@@ -4,8 +4,37 @@ import streamlit as st
 import json
 import hashlib
 import os
+import re
 
 USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
+
+# Job positions dropdown options
+JOB_POSITIONS = [
+    "Virtual Assistant",
+    "Executive Assistant",
+    "Administrative Assistant",
+    "Customer Support Specialist",
+    "Social Media Manager",
+    "Content Writer",
+    "Copywriter",
+    "Project Manager",
+    "Operations Manager",
+    "Marketing Specialist",
+    "Sales Representative",
+    "Account Manager",
+    "Human Resources",
+    "Bookkeeper / Accountant",
+    "Data Entry Specialist",
+    "Graphic Designer",
+    "Web Developer",
+    "Software Engineer",
+    "IT Support",
+    "Team Lead / Supervisor",
+    "Freelancer",
+    "Business Owner",
+    "Student / Intern",
+    "Other",
+]
 
 
 def _load_users() -> dict:
@@ -27,23 +56,32 @@ def _hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 
+def _is_valid_email(email: str) -> bool:
+    """Check if the email format is valid."""
+    return bool(email and re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email))
+
+
 def init_auth_state():
     """Initialize authentication session state."""
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
     if "username" not in st.session_state:
         st.session_state.username = ""
+    if "job_position" not in st.session_state:
+        st.session_state.job_position = "Virtual Assistant"
+    if "email" not in st.session_state:
+        st.session_state.email = ""
     if "auth_page" not in st.session_state:
         st.session_state.auth_page = "login"
 
 
-def register_user(username: str, password: str, confirm_password: str) -> tuple[bool, str]:
-    """Register a new user. Returns (success, message)."""
-    if not username or not password:
-        return False, "Username and password are required."
+def register_user(email: str, job_position: str, password: str, confirm_password: str) -> tuple[bool, str]:
+    """Register a new user using email as the identifier. Returns (success, message)."""
+    if not _is_valid_email(email):
+        return False, "Please enter a valid email address."
 
-    if len(username) < 3:
-        return False, "Username must be at least 3 characters."
+    if not job_position:
+        return False, "Please select a job position."
 
     if len(password) < 6:
         return False, "Password must be at least 6 characters."
@@ -53,30 +91,31 @@ def register_user(username: str, password: str, confirm_password: str) -> tuple[
 
     users = _load_users()
 
-    if username.lower() in users:
-        return False, "Username already exists."
+    if email.lower() in users:
+        return False, "This email is already registered."
 
-    users[username.lower()] = {
-        "username": username,
+    users[email.lower()] = {
+        "email": email,
+        "job_position": job_position,
         "password_hash": _hash_password(password),
     }
     _save_users(users)
     return True, "Registration successful! You can now log in."
 
 
-def login_user(username: str, password: str) -> tuple[bool, str]:
-    """Authenticate a user. Returns (success, message)."""
-    if not username or not password:
-        return False, "Please enter both username and password."
+def login_user(email: str, password: str) -> tuple[bool, str]:
+    """Authenticate a user by email. Returns (success, message)."""
+    if not email or not password:
+        return False, "Please enter both email and password."
 
     users = _load_users()
 
-    user = users.get(username.lower())
+    user = users.get(email.lower())
     if not user:
-        return False, "Invalid username or password."
+        return False, "Invalid email or password."
 
     if user["password_hash"] != _hash_password(password):
-        return False, "Invalid username or password."
+        return False, "Invalid email or password."
 
     return True, "Login successful!"
 
@@ -85,6 +124,8 @@ def logout():
     """Log out the current user."""
     st.session_state.authenticated = False
     st.session_state.username = ""
+    st.session_state.email = ""
+    st.session_state.job_position = "Virtual Assistant"
     st.rerun()
 
 
@@ -103,28 +144,35 @@ def render_auth_page():
 
     with tab_login:
         st.subheader("Welcome back")
-        login_username = st.text_input("Username", key="login_username")
+        login_email = st.text_input("Email Address", key="login_email")
         login_password = st.text_input("Password", type="password", key="login_password")
 
         if st.button("Log In", use_container_width=True, key="login_btn"):
-            success, message = login_user(login_username, login_password)
+            success, message = login_user(login_email, login_password)
             if success:
                 st.session_state.authenticated = True
-                st.session_state.username = login_username
+                st.session_state.email = login_email
+                # Load user profile into session
+                users = _load_users()
+                user_data = users.get(login_email.lower(), {})
+                st.session_state.username = user_data.get("email", login_email)
+                st.session_state.job_position = user_data.get("job_position", "Virtual Assistant")
                 st.rerun()
             else:
                 st.error(message)
 
     with tab_register:
         st.subheader("Create an account")
-        reg_username = st.text_input("Username", key="reg_username")
+        reg_email = st.text_input("Email Address", key="reg_email")
+        reg_job = st.selectbox("Job Position", JOB_POSITIONS, key="reg_job")
         reg_password = st.text_input("Password", type="password", key="reg_password")
         reg_confirm = st.text_input("Confirm Password", type="password", key="reg_confirm")
 
         if st.button("Register", use_container_width=True, key="register_btn"):
-            success, message = register_user(reg_username, reg_password, reg_confirm)
+            success, message = register_user(reg_email, reg_job, reg_password, reg_confirm)
             if success:
                 st.success(message)
+                st.info("👉 Switch to the **Login** tab above to sign in.")
             else:
                 st.error(message)
 
