@@ -85,6 +85,93 @@ The app will be available at `http://localhost:8501`.
 - **Tone selection** — Choose between Friendly, Formal, Professional, or Casual
 - **Persistent output** — Results stay visible until you clear them
 - **Copy support** — Output rendered as a code block with built-in copy button
+- **User authentication** — Login and registration with email and job position
+- **Dynamic prompts** — AI responses tailored to your job role
+- **Dark/light theme** — Toggle between themes in the sidebar
+- **Conversation history** — Review and reload past generations
+- **Responsive layout** — Optimized for desktop and mobile
+
+## Deploy to AWS
+
+The project includes Terraform configuration for deploying to **AWS App Runner** with production-grade infrastructure.
+
+### Architecture
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
+│   Client    │────▶│  App Runner  │────▶│  OpenAI API     │
+└─────────────┘     └──────┬───────┘     └─────────────────┘
+                           │
+                    ┌──────┴───────┐
+                    │              │
+              ┌─────▼─────┐  ┌────▼────────────┐
+              │ DynamoDB   │  │ Secrets Manager  │
+              │ (users)    │  │ (API key)        │
+              └────────────┘  └─────────────────┘
+```
+
+### AWS Resources
+
+| Resource | Purpose | Estimated Cost |
+|----------|---------|----------------|
+| ECR | Docker image storage | ~$0 (free tier) |
+| App Runner | Runs the container with HTTPS | ~$5–15/month |
+| DynamoDB | User storage (replaces `users.json`) | ~$0 (pay-per-request) |
+| Secrets Manager | Stores OpenAI API key securely | ~$0.40/month |
+| IAM Roles | Least-privilege permissions | Free |
+
+**Estimated total: ~$5–16/month** for light usage.
+
+### Deployment Steps
+
+1. Navigate to the Terraform directory:
+
+```bash
+cd terraform
+```
+
+2. Copy and configure variables:
+
+```bash
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your OpenAI API key
+```
+
+3. Initialize and apply infrastructure:
+
+```bash
+terraform init
+terraform plan
+terraform apply
+```
+
+4. Build and push the Docker image:
+
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+5. Get your app URL:
+
+```bash
+terraform output app_url
+```
+
+### Storage Backend
+
+The app automatically detects the environment:
+- **Local development** — uses `users.json` for user storage
+- **AWS (production)** — uses DynamoDB when the `DYNAMODB_TABLE` env var is set
+
+No code changes needed between environments.
+
+### Tear Down
+
+```bash
+cd terraform
+terraform destroy
+```
 
 ## Notes
 

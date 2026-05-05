@@ -1,4 +1,4 @@
-"""Authentication module — login and registration with JSON file storage."""
+"""Authentication module — supports JSON file (local) and DynamoDB (production)."""
 
 import streamlit as st
 import json
@@ -7,6 +7,8 @@ import os
 import re
 
 USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
+DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE")
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
 # Job positions dropdown options
 JOB_POSITIONS = [
@@ -37,7 +39,45 @@ JOB_POSITIONS = [
 ]
 
 
-def _load_users() -> dict:
+# ─────────────────────────────────────────────
+# Storage Backend
+# ─────────────────────────────────────────────
+
+def _use_dynamodb() -> bool:
+    """Check if DynamoDB should be used (production mode)."""
+    return bool(DYNAMODB_TABLE)
+
+
+def _get_dynamodb_table():
+    """Get the DynamoDB table resource."""
+    import boto3
+    dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
+    return dynamodb.Table(DYNAMODB_TABLE)
+
+
+def _load_user_dynamo(email: str) -> dict | None:
+    """Load a single user from DynamoDB."""
+    table = _get_dynamodb_table()
+    response = table.get_item(Key={"email": email.lower()})
+    return response.get("Item")
+
+
+def _save_user_dynamo(user_data: dict):
+    """Save a user to DynamoDB."""
+    table = _get_dynamodb_table()
+    table.put_item(Item=user_data)
+
+
+def _user_exists_dynamo(email: str) -> bool:
+    """Check if a user exists in DynamoDB."""
+    return _load_user_dynamo(email) is not None
+
+
+# ─────────────────────────────────────────────
+# JSON File Storage (local development)
+# ─────────────────────────────────────────────
+
+def _load_users_json() -> dict:
     """Load users from the JSON file."""
     if not os.path.exists(USERS_FILE):
         return {}
@@ -45,11 +85,15 @@ def _load_users() -> dict:
         return json.load(f)
 
 
-def _save_users(users: dict):
+def _save_users_json(users: dict):
     """Save users to the JSON file."""
     with open(USERS_FILE, "w") as f:
         json.dump(users, f, indent=2)
 
+
+# ─────────────────────────────────────────────
+# Common Utilities
+# ─────────────────────────────────────────────
 
 def _hash_password(password: str) -> str:
     """Hash a password using SHA-256."""
@@ -60,6 +104,10 @@ def _is_valid_email(email: str) -> bool:
     """Check if the email format is valid."""
     return bool(email and re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email))
 
+
+# ─────────────────────────────────────────────
+# Auth Logic
+# ─────────────────────────────────────────────
 
 def init_auth_state():
     """Initialize authentication session state."""
@@ -76,7 +124,7 @@ def init_auth_state():
 
 
 def register_user(email: str, job_position: str, password: str, confirm_password: str) -> tuple[bool, str]:
-    """Register a new user using email as the identifier. Returns (success, message)."""
+    """Register a new user. Returns (success, message)."""
     if not _is_valid_email(email):
         return False, "Please enter a valid email address."
 
@@ -89,17 +137,23 @@ def register_user(email: str, job_position: str, password: str, confirm_password
     if password != confirm_password:
         return False, "Passwords do not match."
 
-    users = _load_users()
-
-    if email.lower() in users:
-        return False, "This email is already registered."
-
-    users[email.lower()] = {
-        "email": email,
+    user_data = {
+        "email": email.lower(),
         "job_position": job_position,
         "password_hash": _hash_password(password),
     }
-    _save_users(users)
+
+    if _use_dynamodb():
+        if _user_exists_dynamo(email):
+            return False, "This email is already registered."
+        _save_user_dynamo(user_data)
+    else:
+        users = _load_users_json()
+        if email.lower() in users:
+            return False, "This email is already registered."
+        users[email.lower()] = user_data
+        _save_users_json(users)
+
     return True, "Registration successful! You can now log in."
 
 
@@ -108,9 +162,12 @@ def login_user(email: str, password: str) -> tuple[bool, str]:
     if not email or not password:
         return False, "Please enter both email and password."
 
-    users = _load_users()
+    if _use_dynamodb():
+        user = _load_user_dynamo(email)
+    else:
+        users = _load_users_json()
+        user = users.get(email.lower())
 
-    user = users.get(email.lower())
     if not user:
         return False, "Invalid email or password."
 
@@ -118,6 +175,15 @@ def login_user(email: str, password: str) -> tuple[bool, str]:
         return False, "Invalid email or password."
 
     return True, "Login successful!"
+
+
+def _get_user_profile(email: str) -> dict:
+    """Get user profile data."""
+    if _use_dynamodb():
+        return _load_user_dynamo(email) or {}
+    else:
+        users = _load_users_json()
+        return users.get(email.lower(), {})
 
 
 def logout():
@@ -128,6 +194,10 @@ def logout():
     st.session_state.job_position = "Virtual Assistant"
     st.rerun()
 
+
+# ─────────────────────────────────────────────
+# UI
+# ─────────────────────────────────────────────
 
 def render_auth_page():
     """Render the login/registration page. Returns True if authenticated."""
@@ -153,8 +223,7 @@ def render_auth_page():
                 st.session_state.authenticated = True
                 st.session_state.email = login_email
                 # Load user profile into session
-                users = _load_users()
-                user_data = users.get(login_email.lower(), {})
+                user_data = _get_user_profile(login_email)
                 st.session_state.username = user_data.get("email", login_email)
                 st.session_state.job_position = user_data.get("job_position", "Virtual Assistant")
                 st.rerun()
