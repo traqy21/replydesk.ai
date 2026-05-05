@@ -75,11 +75,13 @@ resource "aws_iam_role_policy" "ec2" {
         Effect = "Allow"
         Action = [
           "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem",
-          "dynamodb:DeleteItem", "dynamodb:Scan", "dynamodb:Query"
+          "dynamodb:DeleteItem", "dynamodb:Scan", "dynamodb:Query",
+          "dynamodb:ListTables"
         ]
         Resource = [
           aws_dynamodb_table.users.arn,
-          aws_dynamodb_table.feedback.arn
+          aws_dynamodb_table.feedback.arn,
+          "arn:aws:dynamodb:${var.aws_region}:*:table/*"
         ]
       },
       {
@@ -122,6 +124,17 @@ resource "aws_iam_role_policy" "ec2" {
           "ecr:BatchGetImage"
         ]
         Resource = aws_ecr_repository.app.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:UpdateInstanceInformation",
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -256,7 +269,20 @@ resource "aws_iam_role_policy" "github_actions_deploy" {
       {
         Sid    = "EC2Deploy"
         Effect = "Allow"
-        Action = ["ssm:SendCommand", "ssm:GetCommandInvocation"]
+        Action = [
+          "ssm:SendCommand",
+          "ssm:GetCommandInvocation",
+          "ssm:ListCommandInvocations"
+        ]
+        Resource = [
+          "arn:aws:ssm:${var.aws_region}::document/AWS-RunShellScript",
+          aws_instance.app.arn
+        ]
+      },
+      {
+        Sid    = "EC2Describe"
+        Effect = "Allow"
+        Action = ["ec2:DescribeInstances"]
         Resource = "*"
       }
     ]

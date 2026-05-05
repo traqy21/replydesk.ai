@@ -14,6 +14,10 @@ dnf install -y docker nginx certbot python3-certbot-nginx aws-cli jq
 systemctl enable --now docker
 usermod -aG docker ec2-user
 
+# SSM agent (enables remote deploy via deploy.sh without SSH)
+dnf install -y amazon-ssm-agent
+systemctl enable --now amazon-ssm-agent
+
 # ── Pull secrets from Secrets Manager ────────
 OPENAI_API_KEY=$(aws secretsmanager get-secret-value \
   --secret-id "${app_name}/openai-api-key" \
@@ -31,6 +35,8 @@ ADMIN_PASSWORD=$(aws secretsmanager get-secret-value \
   --query SecretString --output text)
 
 # ── Write .env file ───────────────────────────
+mkdir -p /opt/replydesk
+
 cat > /opt/replydesk/.env <<EOF
 OPENAI_API_KEY=$OPENAI_API_KEY
 ADMIN_EMAIL=$ADMIN_EMAIL
@@ -43,8 +49,6 @@ APP_URL=https://${domain}
 LOG_LEVEL=INFO
 EOF
 
-mkdir -p /opt/replydesk
-
 # ── Pull and run the app container ───────────
 aws ecr get-login-password --region "${aws_region}" | \
   docker login --username AWS --password-stdin "${ecr_repo}"
@@ -55,11 +59,14 @@ docker run -d \
   --name replydesk \
   --restart unless-stopped \
   --env-file /opt/replydesk/.env \
+  -e OPENAI_API_KEY="$OPENAI_API_KEY" \
+  -e ADMIN_EMAIL="$ADMIN_EMAIL" \
+  -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
   -p 8501:8501 \
   "${ecr_repo}:latest"
 
 # ── Configure nginx as reverse proxy ─────────
-cat > /etc/nginx/conf.d/replydesk.conf <<'NGINX'
+cat > /etc/nginx/conf.d/replydesk.conf <<NGINX
 server {
     listen 80;
     server_name ${domain};
@@ -67,12 +74,12 @@ server {
     location / {
         proxy_pass         http://localhost:8501;
         proxy_http_version 1.1;
-        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Upgrade \$http_upgrade;
         proxy_set_header   Connection "upgrade";
-        proxy_set_header   Host $host;
-        proxy_set_header   X-Real-IP $remote_addr;
-        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto \$scheme;
         proxy_read_timeout 86400;
     }
 }
@@ -129,6 +136,22 @@ ECR_REPO="${ecr_repo}"
 aws ecr get-login-password --region "$AWS_REGION" | \
   docker login --username AWS --password-stdin "$ECR_REPO"
 
+# Re-fetch secrets in case they changed
+OPENAI_API_KEY=$(aws secretsmanager get-secret-value \
+  --secret-id "replydesk-ai/openai-api-key" \
+  --region "$AWS_REGION" \
+  --query SecretString --output text)
+
+ADMIN_EMAIL=$(aws secretsmanager get-secret-value \
+  --secret-id "replydesk-ai/admin-email" \
+  --region "$AWS_REGION" \
+  --query SecretString --output text)
+
+ADMIN_PASSWORD=$(aws secretsmanager get-secret-value \
+  --secret-id "replydesk-ai/admin-password" \
+  --region "$AWS_REGION" \
+  --query SecretString --output text)
+
 docker pull "$ECR_REPO:latest"
 docker stop replydesk || true
 docker rm replydesk || true
@@ -136,6 +159,9 @@ docker run -d \
   --name replydesk \
   --restart unless-stopped \
   --env-file /opt/replydesk/.env \
+  -e OPENAI_API_KEY="$OPENAI_API_KEY" \
+  -e ADMIN_EMAIL="$ADMIN_EMAIL" \
+  -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
   -p 8501:8501 \
   "$ECR_REPO:latest"
 UPDATE

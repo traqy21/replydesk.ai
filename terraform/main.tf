@@ -118,25 +118,6 @@ resource "aws_dynamodb_table" "feedback" {
 
 # ─────────────────────────────────────────────
 # IAM Role for ECR Access (GitHub Actions / CI)
+# NOTE: This role is now handled in ec2.tf via OIDC.
+# Kept here as a placeholder — not used by EC2 deployment.
 # ─────────────────────────────────────────────
-resource "aws_iam_role" "ecr_push" {
-  name = "${var.app_name}-ecr-push-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "build.apprunner.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ecr_push" {
-  role       = aws_iam_role.ecr_push.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
-}

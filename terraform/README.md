@@ -113,6 +113,23 @@ terraform output elastic_ip
 Create an **A record** in your DNS provider pointing your domain to this IP.
 SSL will be provisioned automatically by Let's Encrypt once DNS propagates (~5 minutes).
 
+**If you don't have a domain yet**, you can access the app directly while you set one up.
+First open port 8501 temporarily by adding this to the security group in `ec2.tf`:
+
+```hcl
+ingress {
+  description = "Streamlit direct access (temporary)"
+  from_port   = 8501
+  to_port     = 8501
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+```
+
+Then access via: `http://<elastic_ip>:8501`
+
+Remove this rule once your domain and SSL are set up.
+
 ### 6. Verify SES sender email
 
 AWS sends a verification email to `ses_sender_email`. Click the link before password reset emails will work.
@@ -171,15 +188,49 @@ Pulled from Secrets Manager and written to `/opt/replydesk/.env` on the instance
 Push a new image and trigger a rolling update via SSM (no SSH needed):
 
 ```bash
+cd terraform
 ./deploy.sh
 ```
 
 The script:
-1. Builds and pushes the Docker image to ECR
-2. Sends an SSM command to the EC2 instance to pull and restart the container
-3. Waits for confirmation and reports success/failure
+1. Builds the Docker image for `linux/arm64` (required for t4g instances)
+2. Pushes to ECR
+3. Sends an SSM command to the EC2 instance to pull and restart the container
+4. Waits for confirmation and reports success/failure
+
+> **Note:** Run `deploy.sh` from the `terraform/` directory. It builds the image from the parent folder (`..`) automatically.
 
 The instance also auto-updates daily at 3am via a cron job.
+
+### First-time deploy checklist
+
+If setting up from scratch on a new instance:
+
+```bash
+# 1. Create ECR repository first
+terraform apply -target=aws_ecr_repository.app
+
+# 2. Build and push the ARM image
+cd terraform
+./deploy.sh
+
+# 3. Deploy all infrastructure
+terraform apply
+
+# 4. Get your public IP
+terraform output elastic_ip
+
+# 5. SSH in and create update.sh (only needed if bootstrap failed)
+ssh -i ~/.ssh/id_rsa ec2-user@<elastic_ip>
+```
+
+Once SSH'd in, create `/opt/replydesk/update.sh` if it doesn't exist:
+
+```bash
+ls /opt/replydesk/update.sh || echo "Missing — needs to be created"
+```
+
+If missing, paste and run the block from the SSH Access section below.
 
 ---
 
@@ -187,7 +238,7 @@ The instance also auto-updates daily at 3am via a cron job.
 
 ```bash
 terraform output ssh_command
-# ssh -i ~/.ssh/your-key ec2-user@<elastic-ip>
+# ssh -i ~/.ssh/id_rsa ec2-user@<elastic-ip>
 ```
 
 Useful commands on the instance:
@@ -204,6 +255,52 @@ docker restart replydesk
 
 # Check nginx status
 systemctl status nginx
+```
+
+### Create update.sh manually (if bootstrap failed)
+
+If `/opt/replydesk/update.sh` doesn't exist, create it by running this on the instance:
+
+```bash
+sudo tee /opt/replydesk/update.sh > /dev/null <<'EOF'
+#!/bin/bash
+set -e
+AWS_REGION="ap-southeast-1"
+ECR_REPO="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com/replydesk-ai"
+
+aws ecr get-login-password --region "$AWS_REGION" | \
+  docker login --username AWS --password-stdin "$ECR_REPO"
+
+docker pull "$ECR_REPO:latest"
+
+OPENAI_API_KEY=$(aws secretsmanager get-secret-value \
+  --secret-id "replydesk-ai/openai-api-key" \
+  --region "$AWS_REGION" --query SecretString --output text)
+
+ADMIN_EMAIL=$(aws secretsmanager get-secret-value \
+  --secret-id "replydesk-ai/admin-email" \
+  --region "$AWS_REGION" --query SecretString --output text)
+
+ADMIN_PASSWORD=$(aws secretsmanager get-secret-value \
+  --secret-id "replydesk-ai/admin-password" \
+  --region "$AWS_REGION" --query SecretString --output text)
+
+docker stop replydesk || true
+docker rm replydesk || true
+docker run -d \
+  --name replydesk \
+  --restart unless-stopped \
+  --env-file /opt/replydesk/.env \
+  -e OPENAI_API_KEY="$OPENAI_API_KEY" \
+  -e ADMIN_EMAIL="$ADMIN_EMAIL" \
+  -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+  -p 8501:8501 \
+  "$ECR_REPO:latest"
+
+echo "✅ Update complete."
+EOF
+
+sudo chmod +x /opt/replydesk/update.sh
 ```
 
 ---

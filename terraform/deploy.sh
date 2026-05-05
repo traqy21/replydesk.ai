@@ -5,7 +5,7 @@
 
 set -e
 
-AWS_REGION="${AWS_REGION:-us-east-1}"
+AWS_REGION="${AWS_REGION:-ap-southeast-1}"
 APP_NAME="${APP_NAME:-replydesk-ai}"
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${APP_NAME}"
@@ -15,8 +15,9 @@ aws ecr get-login-password --region "$AWS_REGION" | \
   docker login --username AWS --password-stdin \
   "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
-echo "🏗️  Building Docker image..."
-docker build -t "$APP_NAME" ..
+echo "🏗️  Building Docker image for linux/arm64 (t4g instances)..."
+docker buildx create --use --name replydesk-builder 2>/dev/null || true
+docker buildx build --platform linux/arm64 -t "$APP_NAME" --load .
 
 echo "🏷️  Tagging image..."
 docker tag "$APP_NAME:latest" "$ECR_REPO:latest"
