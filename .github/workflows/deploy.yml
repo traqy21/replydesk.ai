@@ -1,0 +1,97 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+
+# Prevent concurrent deploys — queue them instead
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write   # Required for OIDC auth with AWS
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image tag
+        id: vars
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "ecr_repo=${{ steps.ecr-login.outputs.registry }}/${{ secrets.APP_NAME }}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --tag ${{ steps.vars.outputs.ecr_repo }}:${{ steps.vars.outputs.sha_short }} \
+            --tag ${{ steps.vars.outputs.ecr_repo }}:latest \
+            .
+
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.vars.outputs.ecr_repo }}:${{ steps.vars.outputs.sha_short }}
+          format: table
+          exit-code: 0          # Warn only — set to 1 to block on HIGH/CRITICAL
+          severity: HIGH,CRITICAL
+
+      - name: Push image to ECR
+        run: |
+          docker push ${{ steps.vars.outputs.ecr_repo }}:${{ steps.vars.outputs.sha_short }}
+          docker push ${{ steps.vars.outputs.ecr_repo }}:latest
+
+      - name: Deploy to EC2 via SSM
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:App,Values=${{ secrets.APP_NAME }}" \
+                      "Name=instance-state-name,Values=running" \
+            --query "Reservations[0].Instances[0].InstanceId" \
+            --output text)
+
+          if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
+            echo "⚠️  No running EC2 instance found — skipping deploy trigger."
+            exit 0
+          fi
+
+          echo "📡 Triggering update on instance $INSTANCE_ID..."
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["/opt/replydesk/update.sh"]' \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "⏳ Waiting for deployment..."
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID"
+
+          STATUS=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query "Status" --output text)
+
+          if [ "$STATUS" = "Success" ]; then
+            echo "✅ Deployment complete."
+          else
+            echo "❌ Deployment failed: $STATUS"
+            exit 1
+          fi

@@ -1,0 +1,15 @@
+# Ruff linter configuration
+target-version = "py312"
+line-length = 100
+
+[lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E501",   # Line too long — handled by formatter
+    "F401",   # Unused imports — some are re-exported
+    "E402",   # Module level import not at top — Streamlit requires set_page_config first
+]
+
+[lint.per-file-ignores]
+"pages/*.py" = ["F811"]   # Redefinition of unused name (render functions)
+"main.py"    = ["E402"]   # Imports after st.set_page_config

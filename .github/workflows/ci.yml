@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-check:
+    name: Lint & Import Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff
+
+      - name: Lint with ruff
+        run: ruff check . --output-format=github
+
+      - name: Check imports compile
+        # Verifies all modules are importable without a running Streamlit server
+        env:
+          OPENAI_API_KEY: "sk-test-placeholder"
+        run: |
+          python -c "import config"
+          python -c "import auth"
+          python -c "import ui"
+          python -c "import theme"
+          python -c "import prompts"
+          python -c "import profile"
+          python -c "import logger"
+          python -c "import feedback_store"
+
+      - name: Validate Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          ignore: DL3008,DL3013

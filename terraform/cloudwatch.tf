@@ -12,35 +12,6 @@ resource "aws_cloudwatch_log_group" "app" {
 }
 
 # ─────────────────────────────────────────────
-# CloudWatch — IAM permission for App Runner
-# ─────────────────────────────────────────────
-
-resource "aws_iam_role_policy" "apprunner_cloudwatch" {
-  name = "${var.app_name}-apprunner-cloudwatch-policy"
-  role = aws_iam_role.apprunner_instance.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:DescribeLogStreams",
-          "logs:DescribeLogGroups"
-        ]
-        Resource = [
-          aws_cloudwatch_log_group.app.arn,
-          "${aws_cloudwatch_log_group.app.arn}:*"
-        ]
-      }
-    ]
-  })
-}
-
-# ─────────────────────────────────────────────
 # CloudWatch — Metric Alarms
 # ─────────────────────────────────────────────
 
@@ -56,10 +27,6 @@ resource "aws_cloudwatch_metric_alarm" "error_rate" {
   threshold           = 5
   alarm_description   = "Triggered when 5+ errors occur within 5 minutes"
   treat_missing_data  = "notBreaching"
-
-  tags = {
-    App = var.app_name
-  }
 }
 
 # Alarm for account lockouts (brute-force signal)
@@ -74,8 +41,4 @@ resource "aws_cloudwatch_metric_alarm" "lockout_rate" {
   threshold           = 3
   alarm_description   = "Triggered when 3+ accounts are locked out within 5 minutes"
   treat_missing_data  = "notBreaching"
-
-  tags = {
-    App = var.app_name
-  }
 }

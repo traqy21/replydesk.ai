@@ -117,67 +117,10 @@ resource "aws_dynamodb_table" "feedback" {
 }
 
 # ─────────────────────────────────────────────
-# IAM Role for App Runner
+# IAM Role for ECR Access (GitHub Actions / CI)
 # ─────────────────────────────────────────────
-resource "aws_iam_role" "apprunner_instance" {
-  name = "${var.app_name}-apprunner-instance-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "tasks.apprunner.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "apprunner_instance" {
-  name = "${var.app_name}-apprunner-instance-policy"
-  role = aws_iam_role.apprunner_instance.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue"
-        ]
-        Resource = [
-          aws_secretsmanager_secret.openai_key.arn,
-          aws_secretsmanager_secret.admin_email.arn,
-          aws_secretsmanager_secret.admin_password.arn
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "dynamodb:GetItem",
-          "dynamodb:PutItem",
-          "dynamodb:UpdateItem",
-          "dynamodb:DeleteItem",
-          "dynamodb:Scan",
-          "dynamodb:Query"
-        ]
-        Resource = [
-          aws_dynamodb_table.users.arn,
-          aws_dynamodb_table.feedback.arn
-        ]
-      }
-    ]
-  })
-}
-
-# ─────────────────────────────────────────────
-# IAM Role for ECR Access
-# ─────────────────────────────────────────────
-resource "aws_iam_role" "apprunner_ecr" {
-  name = "${var.app_name}-apprunner-ecr-role"
+resource "aws_iam_role" "ecr_push" {
+  name = "${var.app_name}-ecr-push-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -193,7 +136,7 @@ resource "aws_iam_role" "apprunner_ecr" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "apprunner_ecr" {
-  role       = aws_iam_role.apprunner_ecr.name
+resource "aws_iam_role_policy_attachment" "ecr_push" {
+  role       = aws_iam_role.ecr_push.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
 }

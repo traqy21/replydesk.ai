@@ -16,28 +16,27 @@ variable "openai_api_key" {
   sensitive   = true
 }
 
-variable "cpu" {
-  description = "CPU units for App Runner (1024 = 1 vCPU)"
+variable "instance_type" {
+  description = "EC2 instance type. t4g.micro (~$6/mo) is the recommended minimum. t4g.nano (~$3/mo) may run out of memory under load."
   type        = string
-  default     = "256"
+  default     = "t4g.micro"
 }
 
-variable "memory" {
-  description = "Memory in MB for App Runner"
+variable "ssh_public_key" {
+  description = "SSH public key for EC2 access (contents of your ~/.ssh/id_rsa.pub or similar)"
   type        = string
-  default     = "512"
 }
 
-variable "min_instances" {
-  description = "Minimum number of instances"
-  type        = number
-  default     = 1
+variable "ssh_allowed_cidr" {
+  description = "CIDR block allowed to SSH into the instance. Restrict to your IP for security (e.g. 1.2.3.4/32)"
+  type        = string
+  default     = "0.0.0.0/0"
 }
 
-variable "max_instances" {
-  description = "Maximum number of instances"
-  type        = number
-  default     = 2
+variable "domain" {
+  description = "Your domain name (e.g. app.replydesk.ai). Point an A record to the Elastic IP after deploy. Used for SSL via Let's Encrypt."
+  type        = string
+  default     = "localhost"
 }
 
 variable "ses_sender_email" {
@@ -62,4 +61,15 @@ variable "admin_password" {
   description = "Default admin account password"
   type        = string
   sensitive   = true
+}
+
+variable "github_repo" {
+  description = "GitHub repository in org/repo format (e.g. myorg/replydesk-ai) — used to scope OIDC trust"
+  type        = string
+}
+
+variable "app_url" {
+  description = "Public app URL — set to your domain after first deploy (used in password reset emails)"
+  type        = string
+  default     = "https://localhost"
 }
