@@ -7,6 +7,9 @@ from ui import init_session_state
 from theme import apply_theme
 from auth import render_auth_page, logout, get_remaining_generations, seed_default_users
 from profile import init_profile_state
+from logger import get_logger
+
+log = get_logger("main")
 
 # Page config
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="assets/logo.svg")
@@ -15,6 +18,16 @@ st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="assets/logo.sv
 init_session_state()
 init_profile_state()
 seed_default_users()
+
+# ─────────────────────────────────────────────
+# Password Reset Flow (via ?reset_token= param)
+# ─────────────────────────────────────────────
+reset_token = st.query_params.get("reset_token", "")
+if reset_token or st.session_state.get("reset_flow") == "request":
+    log.info("password_reset_flow_started", extra={"has_token": bool(reset_token)})
+    from pages.reset_password import render as render_reset
+    render_reset(token=reset_token)
+    st.stop()
 
 if "current_page" not in st.session_state:
     st.session_state.current_page = "Tools"

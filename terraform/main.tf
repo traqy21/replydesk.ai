@@ -58,6 +58,24 @@ resource "aws_dynamodb_table" "users" {
 }
 
 # ─────────────────────────────────────────────
+# DynamoDB — Feedback Storage
+# ─────────────────────────────────────────────
+resource "aws_dynamodb_table" "feedback" {
+  name         = "${var.app_name}-feedback"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  tags = {
+    App = var.app_name
+  }
+}
+
+# ─────────────────────────────────────────────
 # IAM Role for App Runner
 # ─────────────────────────────────────────────
 resource "aws_iam_role" "apprunner_instance" {
@@ -104,7 +122,8 @@ resource "aws_iam_role_policy" "apprunner_instance" {
           "dynamodb:Query"
         ]
         Resource = [
-          aws_dynamodb_table.users.arn
+          aws_dynamodb_table.users.arn,
+          aws_dynamodb_table.feedback.arn
         ]
       }
     ]

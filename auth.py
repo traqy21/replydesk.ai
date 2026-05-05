@@ -4,15 +4,20 @@ Features:
 - Bcrypt password hashing
 - Session timeout (auto-logout after inactivity)
 - Rate limiting on generations
+- Brute-force protection with account lockout
 """
 
 import streamlit as st
 import json
 import os
 import re
+import secrets
 from datetime import datetime, timedelta
 
 import bcrypt
+from logger import get_logger
+
+log = get_logger("auth")
 
 USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
 DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE")
@@ -23,6 +28,17 @@ SESSION_TIMEOUT_MINUTES = 30
 
 # Rate limiting: max generations per day per user
 MAX_GENERATIONS_PER_DAY = 50
+
+# Brute-force protection
+MAX_FAILED_LOGIN_ATTEMPTS = 5
+LOCKOUT_DURATION_MINUTES = 15
+
+# Password reset token expiry in minutes
+RESET_TOKEN_EXPIRY_MINUTES = 30
+
+# SES config
+SES_SENDER_EMAIL = os.getenv("SES_SENDER_EMAIL", "noreply@replydesk.ai")
+APP_URL = os.getenv("APP_URL", "http://localhost:8501")
 
 # Job positions dropdown options
 JOB_POSITIONS = [
@@ -237,6 +253,7 @@ def register_user(email: str, job_position: str, password: str, confirm_password
         users[email.lower()] = user_data
         _save_users_json(users)
 
+    log.info("user_registered", extra={"email": email.lower(), "job_position": job_position})
     return True, "Registration successful! You can now log in."
 
 
@@ -274,7 +291,11 @@ def seed_default_users():
 
 
 def login_user(email: str, password: str) -> tuple[bool, str]:
-    """Authenticate a user by email. Returns (success, message)."""
+    """Authenticate a user by email. Returns (success, message).
+
+    Tracks failed attempts and locks the account for LOCKOUT_DURATION_MINUTES
+    after MAX_FAILED_LOGIN_ATTEMPTS consecutive failures.
+    """
     if not email or not password:
         return False, "Please enter both email and password."
 
@@ -287,10 +308,63 @@ def login_user(email: str, password: str) -> tuple[bool, str]:
     if not user:
         return False, "Invalid email or password."
 
-    if not _verify_password(password, user["password_hash"]):
-        return False, "Invalid email or password."
+    # ── Lockout check ──────────────────────────────────────────────────────
+    lockout_until_str = user.get("lockout_until")
+    if lockout_until_str:
+        lockout_until = datetime.fromisoformat(lockout_until_str)
+        if datetime.now() < lockout_until:
+            remaining = int((lockout_until - datetime.now()).total_seconds() / 60) + 1
+            log.warning("login_blocked_lockout", extra={"email": email, "remaining_minutes": remaining})
+            return False, (
+                f"Too many failed attempts. Account locked for {remaining} more minute(s)."
+            )
+        else:
+            # Lockout expired — clear it
+            user.pop("lockout_until", None)
+            user.pop("failed_attempts", None)
 
+    # ── Password check ─────────────────────────────────────────────────────
+    if not _verify_password(password, user["password_hash"]):
+        failed = user.get("failed_attempts", 0) + 1
+        user["failed_attempts"] = failed
+
+        if failed >= MAX_FAILED_LOGIN_ATTEMPTS:
+            user["lockout_until"] = (
+                datetime.now() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+            ).isoformat()
+            user["failed_attempts"] = 0
+            _persist_user(user)
+            log.warning("account_locked", extra={
+                "email": email,
+                "lockout_minutes": LOCKOUT_DURATION_MINUTES,
+            })
+            return False, (
+                f"Too many failed attempts. Account locked for {LOCKOUT_DURATION_MINUTES} minutes."
+            )
+
+        _persist_user(user)
+        attempts_left = MAX_FAILED_LOGIN_ATTEMPTS - failed
+        log.warning("login_failed", extra={"email": email, "attempts_left": attempts_left})
+        return False, f"Invalid email or password. {attempts_left} attempt(s) remaining."
+
+    # ── Success — clear any failure counters ───────────────────────────────
+    if user.get("failed_attempts") or user.get("lockout_until"):
+        user.pop("failed_attempts", None)
+        user.pop("lockout_until", None)
+        _persist_user(user)
+
+    log.info("login_success", extra={"email": email})
     return True, "Login successful!"
+
+
+def _persist_user(user: dict):
+    """Save a user record back to whichever backend is active."""
+    if _use_dynamodb():
+        _save_user_dynamo(user)
+    else:
+        users = _load_users_json()
+        users[user["email"].lower()] = user
+        _save_users_json(users)
 
 
 def _get_user_profile(email: str) -> dict:
@@ -309,6 +383,163 @@ def logout():
     st.session_state.email = ""
     st.session_state.job_position = "Virtual Assistant"
     st.rerun()
+
+
+# ─────────────────────────────────────────────
+# Password Reset
+# ─────────────────────────────────────────────
+
+def _generate_reset_token() -> str:
+    """Generate a secure URL-safe reset token."""
+    return secrets.token_urlsafe(32)
+
+
+def create_password_reset_token(email: str) -> tuple[bool, str]:
+    """Create a reset token for the given email. Returns (success, token_or_message)."""
+    email = email.lower()
+
+    if _use_dynamodb():
+        user = _load_user_dynamo(email)
+    else:
+        users = _load_users_json()
+        user = users.get(email)
+
+    if not user:
+        # Return success anyway to avoid email enumeration
+        return True, ""
+
+    token = _generate_reset_token()
+    expiry = (datetime.now() + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES)).isoformat()
+
+    user["reset_token"] = token
+    user["reset_token_expiry"] = expiry
+
+    if _use_dynamodb():
+        _save_user_dynamo(user)
+    else:
+        users = _load_users_json()
+        users[email] = user
+        _save_users_json(users)
+
+    log.info("password_reset_token_created", extra={"email": email})
+    return True, token
+
+
+def validate_reset_token(token: str) -> tuple[bool, str]:
+    """Validate a reset token. Returns (valid, email_or_error_message)."""
+    if _use_dynamodb():
+        table = _get_dynamodb_table()
+        response = table.scan(
+            FilterExpression="reset_token = :t",
+            ExpressionAttributeValues={":t": token},
+        )
+        items = response.get("Items", [])
+        user = items[0] if items else None
+    else:
+        users = _load_users_json()
+        user = next(
+            (u for u in users.values() if u.get("reset_token") == token),
+            None,
+        )
+
+    if not user:
+        return False, "Invalid or expired reset link."
+
+    expiry_str = user.get("reset_token_expiry", "")
+    if not expiry_str or datetime.now() > datetime.fromisoformat(expiry_str):
+        return False, "This reset link has expired. Please request a new one."
+
+    return True, user["email"]
+
+
+def reset_password_with_token(token: str, new_password: str, confirm_password: str) -> tuple[bool, str]:
+    """Reset a user's password using a valid token. Returns (success, message)."""
+    valid, result = validate_reset_token(token)
+    if not valid:
+        return False, result
+
+    email = result
+
+    if len(new_password) < 6:
+        return False, "Password must be at least 6 characters."
+    if new_password != confirm_password:
+        return False, "Passwords do not match."
+
+    if _use_dynamodb():
+        user = _load_user_dynamo(email)
+    else:
+        users = _load_users_json()
+        user = users.get(email)
+
+    if not user:
+        return False, "User not found."
+
+    user["password_hash"] = _hash_password(new_password)
+    user.pop("reset_token", None)
+    user.pop("reset_token_expiry", None)
+
+    if _use_dynamodb():
+        _save_user_dynamo(user)
+    else:
+        users = _load_users_json()
+        users[email] = user
+        _save_users_json(users)
+
+    log.info("password_reset_success", extra={"email": email})
+    return True, "Password reset successfully! You can now log in."
+
+
+def send_reset_email(email: str, token: str) -> tuple[bool, str]:
+    """Send a password reset email via AWS SES. Returns (success, message)."""
+    reset_url = f"{APP_URL}?reset_token={token}"
+
+    subject = "Reset your Replydesk AI password"
+    body_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <img src="{APP_URL}/assets/logo-wide.svg" alt="Replydesk AI" style="height: 40px; margin-bottom: 24px;" />
+        <h2 style="color: #1a1a2e;">Reset your password</h2>
+        <p>We received a request to reset the password for your Replydesk AI account.</p>
+        <p>Click the button below to choose a new password. This link expires in <strong>{RESET_TOKEN_EXPIRY_MINUTES} minutes</strong>.</p>
+        <a href="{reset_url}"
+           style="display:inline-block; padding: 12px 24px; background-color: #0f3460;
+                  color: #ffffff; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+            Reset Password
+        </a>
+        <p style="color: #666; font-size: 13px;">
+            If you didn't request this, you can safely ignore this email.<br/>
+            This link will expire at {(datetime.now() + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES)).strftime("%Y-%m-%d %H:%M UTC")}.
+        </p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+        <p style="color: #999; font-size: 12px;">Replydesk AI — Your AI-powered assistant for professional communication</p>
+    </body>
+    </html>
+    """
+    body_text = (
+        f"Reset your Replydesk AI password\n\n"
+        f"Click the link below to reset your password (expires in {RESET_TOKEN_EXPIRY_MINUTES} minutes):\n\n"
+        f"{reset_url}\n\n"
+        f"If you didn't request this, ignore this email."
+    )
+
+    try:
+        import boto3
+        ses = boto3.client("ses", region_name=AWS_REGION)
+        ses.send_email(
+            Source=SES_SENDER_EMAIL,
+            Destination={"ToAddresses": [email]},
+            Message={
+                "Subject": {"Data": subject, "Charset": "UTF-8"},
+                "Body": {
+                    "Text": {"Data": body_text, "Charset": "UTF-8"},
+                    "Html": {"Data": body_html, "Charset": "UTF-8"},
+                },
+            },
+        )
+        return True, "Reset email sent."
+    except Exception as e:
+        log.error("ses_send_failed", extra={"email": email, "error": str(e)}, exc_info=True)
+        return False, f"Failed to send email: {e}"
 
 
 # ─────────────────────────────────────────────
@@ -355,6 +586,10 @@ def render_auth_page():
                 st.rerun()
             else:
                 st.error(message)
+
+        if st.button("🔑 Forgot password?", use_container_width=True, key="forgot_pw_btn", type="secondary"):
+            st.session_state.reset_flow = "request"
+            st.rerun()
 
     with tab_register:
         st.subheader("Create an account")

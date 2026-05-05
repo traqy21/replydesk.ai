@@ -39,3 +39,15 @@ variable "max_instances" {
   type        = number
   default     = 2
 }
+
+variable "ses_sender_email" {
+  description = "Verified SES email address used to send password reset emails"
+  type        = string
+  default     = "noreply@replydesk.ai"
+}
+
+variable "log_retention_days" {
+  description = "Number of days to retain CloudWatch logs"
+  type        = number
+  default     = 30
+}

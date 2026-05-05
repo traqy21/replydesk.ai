@@ -1,7 +1,8 @@
-aws_region     = "us-east-1"
-app_name       = "replydesk-ai"
-openai_api_key = "sk-your-openai-api-key-here"
-cpu            = "256"
-memory         = "512"
-min_instances  = 1
-max_instances  = 2
+aws_region       = "us-east-1"
+app_name         = "replydesk-ai"
+openai_api_key   = "sk-your-openai-api-key-here"
+cpu              = "256"
+memory           = "512"
+min_instances    = 1
+max_instances    = 2
+ses_sender_email = "noreply@replydesk.ai"

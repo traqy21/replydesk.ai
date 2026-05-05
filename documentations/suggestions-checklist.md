@@ -5,7 +5,10 @@
 - [x] Upgrade password hashing from SHA-256 to bcrypt/argon2
 - [x] Add session timeout (auto-logout after 30 min inactivity)
 - [x] Add rate limiting on OpenAI API calls (e.g., 50 generations/day per user)
-- [ ] Add password reset flow (email-based via AWS SES)
+- [x] Add password reset flow (email-based via AWS SES)
+- [x] Feedback persistence — moved from flat file to DynamoDB (survives redeployments)
+- [x] Brute-force protection — account lockout after 5 failed login attempts (15 min lockout)
+- [x] CloudWatch logging — structured JSON logs shipped to AWS CloudWatch via watchtower, with metric alarms for error rate and account lockouts
 
 ## Medium Priority (Usability)
 

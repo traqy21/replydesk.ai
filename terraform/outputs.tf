@@ -13,7 +13,23 @@ output "dynamodb_table_name" {
   value       = aws_dynamodb_table.users.name
 }
 
+output "dynamodb_feedback_table_name" {
+  description = "DynamoDB table name for feedback storage"
+  value       = aws_dynamodb_table.feedback.name
+}
+
+output "ses_sender_email" {
+  description = "SES verified sender email for password reset"
+  value       = aws_ses_email_identity.sender.email
+}
+
+
 output "service_arn" {
   description = "ARN of the App Runner service"
   value       = aws_apprunner_service.app.arn
+}
+
+output "cloudwatch_log_group" {
+  description = "CloudWatch log group for application logs"
+  value       = aws_cloudwatch_log_group.app.name
 }

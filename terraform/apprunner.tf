@@ -18,8 +18,12 @@ resource "aws_apprunner_service" "app" {
         }
 
         runtime_environment_variables = {
-          DYNAMODB_TABLE = aws_dynamodb_table.users.name
-          AWS_REGION     = var.aws_region
+          DYNAMODB_TABLE   = aws_dynamodb_table.users.name
+          AWS_REGION       = var.aws_region
+          SES_SENDER_EMAIL = var.ses_sender_email
+          APP_URL          = "https://${aws_apprunner_service.app.service_url}"
+          APP_NAME         = var.app_name
+          LOG_LEVEL        = "INFO"
         }
       }
 

@@ -75,7 +75,8 @@ def render():
     import os
     st.json({
         "storage_backend": "DynamoDB" if _use_dynamodb() else "JSON File",
-        "dynamodb_table": os.getenv("DYNAMODB_TABLE", "Not configured"),
+        "dynamodb_users_table": os.getenv("DYNAMODB_TABLE", "Not configured"),
+        "dynamodb_feedback_table": f"{os.getenv('APP_NAME', 'replydesk-ai')}-feedback",
         "aws_region": os.getenv("AWS_REGION", "us-east-1"),
         "total_users": len(users),
     })

@@ -1,26 +1,8 @@
 """Feedback page — collect user feedback and suggestions."""
 
 import streamlit as st
-import json
-import os
 from datetime import datetime
-
-FEEDBACK_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "feedback.json")
-
-
-def _load_feedback() -> list:
-    """Load feedback entries from file."""
-    if not os.path.exists(FEEDBACK_FILE):
-        return []
-    with open(FEEDBACK_FILE, "r") as f:
-        return json.load(f)
-
-
-def _save_feedback(entries: list):
-    """Save feedback entries to file."""
-    with open(FEEDBACK_FILE, "w") as f:
-        json.dump(entries, f, indent=2)
-
+from feedback_store import save_feedback, load_user_feedback
 
 CATEGORIES = [
     "General Feedback",
@@ -61,19 +43,22 @@ def render():
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
 
-            entries = _load_feedback()
-            entries.append(entry)
-            _save_feedback(entries)
-
-            st.success("Thank you! Your feedback has been submitted. ✅")
-            st.balloons()
+            try:
+                save_feedback(entry)
+                st.success("Thank you! Your feedback has been submitted. ✅")
+                st.balloons()
+            except Exception as e:
+                st.error(f"Could not save feedback: {e}")
 
     st.divider()
 
     # Show user's past feedback
     st.markdown("**Your Previous Feedback**")
-    entries = _load_feedback()
-    user_entries = [e for e in entries if e.get("email") == st.session_state.get("email")]
+    try:
+        user_entries = load_user_feedback(st.session_state.get("email", ""))
+    except Exception as e:
+        st.warning(f"Could not load feedback history: {e}")
+        user_entries = []
 
     if user_entries:
         for entry in reversed(user_entries):
