@@ -318,6 +318,7 @@ def render_auth_page():
                 user_data = _get_user_profile(login_email)
                 st.session_state.username = user_data.get("email", login_email)
                 st.session_state.job_position = user_data.get("job_position", "Virtual Assistant")
+                st.session_state.display_name = user_data.get("display_name", "")
                 st.rerun()
             else:
                 st.error(message)

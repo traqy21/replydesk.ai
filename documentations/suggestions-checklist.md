@@ -9,7 +9,7 @@
 
 ## Medium Priority (Usability)
 
-- [ ] User profile/settings page (update job position, change password, display name)
+- [x] User profile/settings page (update job position, change password, display name)
 - [ ] Export output to file (.txt, .docx, .pdf)
 - [ ] Prompt templates / favorites (save and reuse custom prompts)
 - [ ] Multi-language output support (language selector injected into prompts)
@@ -17,7 +17,7 @@
 
 ## Lower Priority (Nice to Have)
 
-- [ ] Multi-page Streamlit app (separate pages for Tools, History, Profile, Admin)
+- [x] Multi-page Streamlit app (separate pages for Tools, History, Profile, Admin)
 - [ ] Admin panel (view registered users, usage stats, manage accounts)
 - [ ] Streaming responses (token-by-token output using OpenAI stream mode)
 - [ ] Prompt versioning (track which prompt version generated each output)

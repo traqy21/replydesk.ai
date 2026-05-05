@@ -50,6 +50,13 @@ LIGHT_THEME_CSS = """
 
 RESPONSIVE_CSS = """
 <style>
+    /* Hide Streamlit deploy button and toolbar */
+    .stDeployButton,
+    [data-testid="stToolbar"],
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+
     /* Responsive layout improvements */
     @media (max-width: 768px) {
         .stApp > header {

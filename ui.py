@@ -18,50 +18,6 @@ def init_session_state():
         st.session_state.theme = "Light"
 
 
-def render_sidebar():
-    """Render the sidebar with tool selector, theme toggle, and history."""
-    tool = st.sidebar.selectbox("Select Tool", TOOLS)
-
-    st.sidebar.divider()
-
-    # Theme toggle
-    st.sidebar.subheader("🎨 Theme")
-    theme = st.sidebar.radio(
-        "Choose theme",
-        ["Light", "Dark"],
-        index=0 if st.session_state.theme == "Light" else 1,
-        horizontal=True,
-        label_visibility="collapsed",
-    )
-    if theme != st.session_state.theme:
-        st.session_state.theme = theme
-        st.rerun()
-
-    st.sidebar.divider()
-
-    # History log
-    st.sidebar.subheader("📜 History")
-    if st.session_state.history:
-        for i, entry in enumerate(reversed(st.session_state.history)):
-            with st.sidebar.expander(
-                f"{entry['tool']} — {entry['timestamp']}", expanded=False
-            ):
-                st.markdown(f"**Tone:** {entry['tone']}")
-                st.markdown(f"**Input:** {entry['input'][:100]}{'...' if len(entry['input']) > 100 else ''}")
-                st.code(entry["output"][:300] + ("..." if len(entry["output"]) > 300 else ""), language="markdown")
-                if st.button("♻️ Load", key=f"load_{i}"):
-                    st.session_state.generated_result = entry["output"]
-                    st.rerun()
-
-        if st.sidebar.button("🗑️ Clear History"):
-            st.session_state.history = []
-            st.rerun()
-    else:
-        st.sidebar.caption("No history yet.")
-
-    return tool
-
-
 def render_input():
     """Render the input section. Returns (user_input, tone, generate_clicked)."""
     st.subheader("Input")
@@ -87,7 +43,6 @@ def render_output():
     st.subheader("Output")
 
     if st.session_state.generated_result:
-        # Editable output
         edited = st.text_area(
             "Generated Result (editable)",
             value=st.session_state.generated_result,
@@ -121,5 +76,5 @@ def add_to_history(tool: str, tone: str, user_input: str, output: str):
         "tone": tone,
         "input": user_input,
         "output": output,
-        "timestamp": datetime.now().strftime("%H:%M:%S"),
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     })

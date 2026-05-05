@@ -1,11 +1,9 @@
 [client]
 showSidebarNavigation = false
+toolbarMode = "minimal"
 
 [server]
 headless = true
-
-[ui]
-hideTopBar = true
 
 [theme]
 base = "dark"
