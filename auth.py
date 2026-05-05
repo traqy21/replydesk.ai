@@ -1,14 +1,28 @@
-"""Authentication module — supports JSON file (local) and DynamoDB (production)."""
+"""Authentication module — supports JSON file (local) and DynamoDB (production).
+
+Features:
+- Bcrypt password hashing
+- Session timeout (auto-logout after inactivity)
+- Rate limiting on generations
+"""
 
 import streamlit as st
 import json
-import hashlib
 import os
 import re
+from datetime import datetime, timedelta
+
+import bcrypt
 
 USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
 DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+
+# Session timeout in minutes
+SESSION_TIMEOUT_MINUTES = 30
+
+# Rate limiting: max generations per day per user
+MAX_GENERATIONS_PER_DAY = 50
 
 # Job positions dropdown options
 JOB_POSITIONS = [
@@ -92,17 +106,82 @@ def _save_users_json(users: dict):
 
 
 # ─────────────────────────────────────────────
-# Common Utilities
+# Password Hashing (bcrypt)
 # ─────────────────────────────────────────────
 
 def _hash_password(password: str) -> str:
-    """Hash a password using SHA-256."""
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Hash a password using bcrypt."""
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+
+def _verify_password(password: str, hashed: str) -> bool:
+    """Verify a password against a bcrypt hash. Also supports legacy SHA-256."""
+    # Support legacy SHA-256 hashes (64 hex chars) for backward compatibility
+    if len(hashed) == 64 and all(c in "0123456789abcdef" for c in hashed):
+        import hashlib
+        return hashlib.sha256(password.encode()).hexdigest() == hashed
+    # Bcrypt verification
+    try:
+        return bcrypt.checkpw(password.encode(), hashed.encode())
+    except (ValueError, TypeError):
+        return False
 
 
 def _is_valid_email(email: str) -> bool:
     """Check if the email format is valid."""
     return bool(email and re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email))
+
+
+# ─────────────────────────────────────────────
+# Session Timeout
+# ─────────────────────────────────────────────
+
+def _update_last_activity():
+    """Update the last activity timestamp."""
+    st.session_state.last_activity = datetime.now()
+
+
+def _check_session_timeout() -> bool:
+    """Check if the session has timed out. Returns True if expired."""
+    if "last_activity" not in st.session_state:
+        return False
+
+    elapsed = datetime.now() - st.session_state.last_activity
+    return elapsed > timedelta(minutes=SESSION_TIMEOUT_MINUTES)
+
+
+# ─────────────────────────────────────────────
+# Rate Limiting
+# ─────────────────────────────────────────────
+
+def check_rate_limit() -> tuple[bool, str]:
+    """Check if the user has exceeded the daily generation limit.
+    Returns (allowed, message).
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # Reset counter if it's a new day
+    if st.session_state.get("rate_limit_date") != today:
+        st.session_state.rate_limit_date = today
+        st.session_state.generation_count = 0
+
+    if st.session_state.generation_count >= MAX_GENERATIONS_PER_DAY:
+        remaining_msg = "You've reached your daily limit of {} generations. Try again tomorrow.".format(
+            MAX_GENERATIONS_PER_DAY
+        )
+        return False, remaining_msg
+
+    return True, ""
+
+
+def increment_generation_count():
+    """Increment the daily generation counter."""
+    st.session_state.generation_count = st.session_state.get("generation_count", 0) + 1
+
+
+def get_remaining_generations() -> int:
+    """Get the number of remaining generations for today."""
+    return MAX_GENERATIONS_PER_DAY - st.session_state.get("generation_count", 0)
 
 
 # ─────────────────────────────────────────────
@@ -121,6 +200,10 @@ def init_auth_state():
         st.session_state.email = ""
     if "auth_page" not in st.session_state:
         st.session_state.auth_page = "login"
+    if "generation_count" not in st.session_state:
+        st.session_state.generation_count = 0
+    if "rate_limit_date" not in st.session_state:
+        st.session_state.rate_limit_date = datetime.now().strftime("%Y-%m-%d")
 
 
 def register_user(email: str, job_position: str, password: str, confirm_password: str) -> tuple[bool, str]:
@@ -171,7 +254,7 @@ def login_user(email: str, password: str) -> tuple[bool, str]:
     if not user:
         return False, "Invalid email or password."
 
-    if user["password_hash"] != _hash_password(password):
+    if not _verify_password(password, user["password_hash"]):
         return False, "Invalid email or password."
 
     return True, "Login successful!"
@@ -203,7 +286,15 @@ def render_auth_page():
     """Render the login/registration page. Returns True if authenticated."""
     init_auth_state()
 
+    # Check session timeout
+    if st.session_state.authenticated and _check_session_timeout():
+        st.session_state.authenticated = False
+        st.session_state.email = ""
+        st.session_state.username = ""
+        st.warning("⏰ Your session has expired due to inactivity. Please log in again.")
+
     if st.session_state.authenticated:
+        _update_last_activity()
         return True
 
     st.markdown("### ✉️ Replydesk AI")
@@ -222,6 +313,7 @@ def render_auth_page():
             if success:
                 st.session_state.authenticated = True
                 st.session_state.email = login_email
+                _update_last_activity()
                 # Load user profile into session
                 user_data = _get_user_profile(login_email)
                 st.session_state.username = user_data.get("email", login_email)

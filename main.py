@@ -13,7 +13,7 @@ from ui import (
     add_to_history,
 )
 from theme import apply_theme
-from auth import render_auth_page, logout
+from auth import render_auth_page, logout, check_rate_limit, increment_generation_count, get_remaining_generations
 
 # Page config
 st.set_page_config(page_title=APP_NAME, layout="wide")
@@ -35,6 +35,7 @@ st.caption(APP_CAPTION)
 # User info in sidebar
 st.sidebar.markdown(f"👤 **{st.session_state.email}**")
 st.sidebar.caption(f"📋 {st.session_state.job_position}")
+st.sidebar.caption(f"⚡ {get_remaining_generations()} generations remaining today")
 if st.sidebar.button("🚪 Logout"):
     logout()
 
@@ -57,24 +58,30 @@ user_input, tone, generate = render_input()
 
 # Handle generation
 if generate and user_input:
-    progress_bar = render_progress()
+    # Check rate limit
+    allowed, limit_message = check_rate_limit()
+    if not allowed:
+        st.error(limit_message)
+    else:
+        progress_bar = render_progress()
 
-    try:
-        prompt = build_prompt(tool, user_input, tone, st.session_state.job_position)
+        try:
+            prompt = build_prompt(tool, user_input, tone, st.session_state.job_position)
 
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "user", "content": prompt}]
-        )
+            response = client.chat.completions.create(
+                model=MODEL,
+                messages=[{"role": "user", "content": prompt}]
+            )
 
-        result = response.choices[0].message.content
-        st.session_state.generated_result = result
-        add_to_history(tool, tone, user_input, result)
+            result = response.choices[0].message.content
+            st.session_state.generated_result = result
+            add_to_history(tool, tone, user_input, result)
+            increment_generation_count()
 
-    except Exception as e:
-        st.error(f"Something went wrong: {e}")
-    finally:
-        progress_bar.empty()
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")
+        finally:
+            progress_bar.empty()
 
 elif generate and not user_input:
     st.warning("Please enter some input text before generating.")
