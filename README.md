@@ -1,4 +1,4 @@
-# TraqMate AI
+# ReplyDesk AI
 
 A simple Streamlit app for generating client replies, emails, task summaries, and daily reports using OpenAI.
 
