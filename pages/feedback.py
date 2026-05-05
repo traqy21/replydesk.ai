@@ -16,6 +16,11 @@ CATEGORIES = [
 RATINGS = ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"]
 
 
+def _reset_form():
+    """Bump the form key to force all widgets to re-render empty."""
+    st.session_state.feedback_form_key = st.session_state.get("feedback_form_key", 0) + 1
+
+
 def render():
     """Render the feedback page."""
     st.markdown("#### 💬 Feedback")
@@ -23,14 +28,29 @@ def render():
 
     st.divider()
 
-    # Feedback form
-    category = st.selectbox("Category", CATEGORIES)
-    rating = st.select_slider("How would you rate your experience?", options=RATINGS, value="⭐⭐⭐")
+    # Use a versioned key suffix so incrementing it clears all widgets
+    k = st.session_state.get("feedback_form_key", 0)
 
-    subject = st.text_input("Subject", placeholder="Brief summary of your feedback")
-    message = st.text_area("Your Feedback", placeholder="Tell us what's on your mind...", height=150)
+    category = st.selectbox("Category", CATEGORIES, key=f"fb_category_{k}")
+    rating = st.select_slider(
+        "How would you rate your experience?",
+        options=RATINGS,
+        value="⭐⭐⭐",
+        key=f"fb_rating_{k}",
+    )
+    subject = st.text_input(
+        "Subject",
+        placeholder="Brief summary of your feedback",
+        key=f"fb_subject_{k}",
+    )
+    message = st.text_area(
+        "Your Feedback",
+        placeholder="Tell us what's on your mind...",
+        height=150,
+        key=f"fb_message_{k}",
+    )
 
-    if st.button("📨 Submit Feedback", use_container_width=True):
+    if st.button("📨 Submit Feedback", use_container_width=True, key=f"fb_submit_{k}"):
         if not subject or not message:
             st.error("Please fill in both the subject and feedback message.")
         else:
@@ -42,9 +62,9 @@ def render():
                 "message": message,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
-
             try:
                 save_feedback(entry)
+                _reset_form()
                 st.success("Thank you! Your feedback has been submitted. ✅")
                 st.balloons()
             except Exception as e:

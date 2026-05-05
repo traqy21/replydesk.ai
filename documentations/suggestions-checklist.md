@@ -21,7 +21,7 @@
 ## Lower Priority (Nice to Have)
 
 - [x] Multi-page Streamlit app (separate pages for Tools, History, Profile, Admin)
-- [ ] Admin panel (view registered users, usage stats, manage accounts)
+- [x] Admin panel (view registered users, usage stats, manage accounts)
 - [ ] Streaming responses (token-by-token output using OpenAI stream mode)
 - [ ] Prompt versioning (track which prompt version generated each output)
 - [ ] Webhook / Slack integration (send output directly to Slack or email)
