@@ -623,4 +623,13 @@ def render_auth_page():
                 else:
                     st.error(message)
 
+            st.caption(
+                "By creating an account you agree to our "
+                "[Privacy Policy](#)"
+                " — click **Privacy Policy** below to read it."
+            )
+            if st.button("📄 Privacy Policy", use_container_width=True, key="reg_privacy_btn", type="secondary"):
+                st.session_state.show_privacy_policy = True
+                st.rerun()
+
     return False

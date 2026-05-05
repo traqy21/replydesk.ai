@@ -17,7 +17,11 @@ st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="assets/logo.sv
 # Initialize state
 init_session_state()
 init_profile_state()
-seed_default_users()
+
+# Seed default admin once per server process, not on every rerun
+if "admin_seeded" not in st.session_state:
+    seed_default_users()
+    st.session_state.admin_seeded = True
 
 # Apply theme early so landing page is also themed
 apply_theme()
@@ -30,6 +34,17 @@ if reset_token or st.session_state.get("reset_flow") == "request":
     log.info("password_reset_flow_started", extra={"has_token": bool(reset_token)})
     from pages.reset_password import render as render_reset
     render_reset(token=reset_token)
+    st.stop()
+
+# ─────────────────────────────────────────────
+# Privacy Policy (accessible without login)
+# ─────────────────────────────────────────────
+if st.session_state.get("show_privacy_policy"):
+    if st.button("← Back", key="privacy_back_btn", type="secondary"):
+        st.session_state.show_privacy_policy = False
+        st.rerun()
+    from pages.privacy_policy import render as render_privacy
+    render_privacy()
     st.stop()
 
 # ─────────────────────────────────────────────
@@ -114,6 +129,11 @@ st.sidebar.divider()
 # Logout
 if st.sidebar.button("🚪 Logout", use_container_width=True):
     logout()
+
+st.sidebar.divider()
+if st.sidebar.button("📄 Privacy Policy", use_container_width=True, type="secondary"):
+    st.session_state.show_privacy_policy = True
+    st.rerun()
 
 # ─────────────────────────────────────────────
 # Main Content — Page Router

@@ -225,3 +225,10 @@ def render():
         """,
         unsafe_allow_html=True,
     )
+
+    # Privacy policy link
+    _, mid, _ = st.columns([1, 1, 1])
+    with mid:
+        if st.button("📄 Privacy Policy", use_container_width=True, type="secondary", key="landing_privacy_btn"):
+            st.session_state.show_privacy_policy = True
+            st.rerun()
