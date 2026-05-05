@@ -258,36 +258,32 @@ def register_user(email: str, job_position: str, password: str, confirm_password
 
 
 def seed_default_users():
-    """Seed default users if they don't already exist. Called once on startup."""
-    defaults = [
-        {
-            "email": "admin@replydesk.ai",
-            "password": "admin123",
-            "job_position": "Business Owner",
-            "display_name": "Admin",
-        },
-    ]
+    """Seed the default admin user from environment variables if not already present."""
+    admin_email = os.getenv("ADMIN_EMAIL", "").lower()
+    admin_password = os.getenv("ADMIN_PASSWORD", "")
 
-    for user in defaults:
-        email = user["email"].lower()
-        if _use_dynamodb():
-            if not _user_exists_dynamo(email):
-                _save_user_dynamo({
-                    "email": email,
-                    "job_position": user["job_position"],
-                    "display_name": user["display_name"],
-                    "password_hash": _hash_password(user["password"]),
-                })
-        else:
-            users = _load_users_json()
-            if email not in users:
-                users[email] = {
-                    "email": email,
-                    "job_position": user["job_position"],
-                    "display_name": user["display_name"],
-                    "password_hash": _hash_password(user["password"]),
-                }
-                _save_users_json(users)
+    if not admin_email or not admin_password:
+        log.warning("seed_skipped", extra={"reason": "ADMIN_EMAIL or ADMIN_PASSWORD not set in environment"})
+        return
+
+    user_record = {
+        "email": admin_email,
+        "job_position": "Business Owner",
+        "display_name": "Admin",
+        "is_admin": True,
+        "password_hash": _hash_password(admin_password),
+    }
+
+    if _use_dynamodb():
+        if not _user_exists_dynamo(admin_email):
+            _save_user_dynamo(user_record)
+            log.info("admin_user_seeded", extra={"email": admin_email, "backend": "dynamodb"})
+    else:
+        users = _load_users_json()
+        if admin_email not in users:
+            users[admin_email] = user_record
+            _save_users_json(users)
+            log.info("admin_user_seeded", extra={"email": admin_email, "backend": "json"})
 
 
 def login_user(email: str, password: str) -> tuple[bool, str]:
@@ -374,6 +370,15 @@ def _get_user_profile(email: str) -> dict:
     else:
         users = _load_users_json()
         return users.get(email.lower(), {})
+
+
+def is_current_user_admin() -> bool:
+    """Check if the currently logged-in user has admin privileges."""
+    email = st.session_state.get("email", "")
+    if not email:
+        return False
+    profile = _get_user_profile(email)
+    return bool(profile.get("is_admin", False))
 
 
 def logout():
@@ -594,6 +599,7 @@ def render_auth_page():
                     st.session_state.username = user_data.get("email", login_email)
                     st.session_state.job_position = user_data.get("job_position", "Virtual Assistant")
                     st.session_state.display_name = user_data.get("display_name", "")
+                    st.session_state.is_admin = bool(user_data.get("is_admin", False))
                     st.rerun()
                 else:
                     st.error(message)

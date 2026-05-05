@@ -15,6 +15,8 @@ resource "aws_apprunner_service" "app" {
 
         runtime_environment_secrets = {
           OPENAI_API_KEY = aws_secretsmanager_secret.openai_key.arn
+          ADMIN_EMAIL    = aws_secretsmanager_secret.admin_email.arn
+          ADMIN_PASSWORD = aws_secretsmanager_secret.admin_password.arn
         }
 
         runtime_environment_variables = {

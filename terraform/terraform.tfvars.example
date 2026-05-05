@@ -6,3 +6,5 @@ memory           = "512"
 min_instances    = 1
 max_instances    = 2
 ses_sender_email = "noreply@replydesk.ai"
+admin_email      = "admin@replydesk.ai"
+admin_password   = "change-me-before-deploy"

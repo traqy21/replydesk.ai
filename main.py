@@ -67,7 +67,9 @@ if not render_auth_page():
 st.sidebar.image("assets/logo-wide.svg", use_container_width=True)
 
 # Navigation (top priority — immediately accessible)
-PAGES = ["🛠️ Tools", "📜 History", "💬 Feedback", "⚙️ Settings", "🔐 Admin"]
+PAGES = ["🛠️ Tools", "📜 History", "💬 Feedback", "⚙️ Settings"]
+if st.session_state.get("is_admin"):
+    PAGES.append("🔐 Admin")
 
 for page_label in PAGES:
     page_name = page_label.split(" ", 1)[1]

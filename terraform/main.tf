@@ -40,6 +40,29 @@ resource "aws_secretsmanager_secret_version" "openai_key" {
 }
 
 # ─────────────────────────────────────────────
+# Secrets Manager — Admin Credentials
+# ─────────────────────────────────────────────
+resource "aws_secretsmanager_secret" "admin_email" {
+  name        = "${var.app_name}/admin-email"
+  description = "Admin email for Replydesk AI"
+}
+
+resource "aws_secretsmanager_secret_version" "admin_email" {
+  secret_id     = aws_secretsmanager_secret.admin_email.id
+  secret_string = var.admin_email
+}
+
+resource "aws_secretsmanager_secret" "admin_password" {
+  name        = "${var.app_name}/admin-password"
+  description = "Admin password for Replydesk AI"
+}
+
+resource "aws_secretsmanager_secret_version" "admin_password" {
+  secret_id     = aws_secretsmanager_secret.admin_password.id
+  secret_string = var.admin_password
+}
+
+# ─────────────────────────────────────────────
 # DynamoDB — User Storage
 # ─────────────────────────────────────────────
 resource "aws_dynamodb_table" "users" {
@@ -108,7 +131,9 @@ resource "aws_iam_role_policy" "apprunner_instance" {
           "secretsmanager:GetSecretValue"
         ]
         Resource = [
-          aws_secretsmanager_secret.openai_key.arn
+          aws_secretsmanager_secret.openai_key.arn,
+          aws_secretsmanager_secret.admin_email.arn,
+          aws_secretsmanager_secret.admin_password.arn
         ]
       },
       {

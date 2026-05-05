@@ -51,3 +51,15 @@ variable "log_retention_days" {
   type        = number
   default     = 30
 }
+
+variable "admin_email" {
+  description = "Default admin account email"
+  type        = string
+  sensitive   = true
+}
+
+variable "admin_password" {
+  description = "Default admin account password"
+  type        = string
+  sensitive   = true
+}
