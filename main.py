@@ -34,6 +34,7 @@ st.caption(APP_CAPTION)
 
 # User info in sidebar
 st.sidebar.markdown(f"👤 **{st.session_state.email}**")
+st.sidebar.caption(f"📋 {st.session_state.job_position}")
 if st.sidebar.button("🚪 Logout"):
     logout()
 
