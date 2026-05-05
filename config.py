@@ -19,4 +19,4 @@ if not api_key:
         "OPENAI_API_KEY not found. Set it in your environment or in a .env file next to the app."
     )
 
-client = OpenAI(api_key=api_key)
+client = OpenAI(api_key=api_key, timeout=30.0)

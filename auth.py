@@ -400,9 +400,13 @@ def _generate_reset_token() -> str:
 
 
 def create_password_reset_token(email: str) -> tuple[bool, str]:
-    """Create a reset token for the given email. Returns (success, token_or_message)."""
+    """Create a reset token for the given email. Returns (success, token_or_message).
+
+    Rate-limited to 1 request per 5 minutes per email to prevent inbox spam attacks.
+    """
     email = email.lower()
 
+    # ── Rate limit: 1 reset request per 5 minutes per email ───────────────
     if _use_dynamodb():
         user = _load_user_dynamo(email)
     else:
@@ -410,14 +414,24 @@ def create_password_reset_token(email: str) -> tuple[bool, str]:
         user = users.get(email)
 
     if not user:
-        # Return success anyway to avoid email enumeration
-        return True, ""
+        return True, ""  # Avoid enumeration
+
+    last_reset_str = user.get("last_reset_request")
+    if last_reset_str:
+        try:
+            last_reset = datetime.fromisoformat(last_reset_str)
+            if datetime.now() - last_reset < timedelta(minutes=5):
+                log.warning("reset_rate_limited", extra={"email": email})
+                return True, ""  # Silently succeed to avoid enumeration
+        except ValueError:
+            pass
 
     token = _generate_reset_token()
     expiry = (datetime.now() + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES)).isoformat()
 
     user["reset_token"] = token
     user["reset_token_expiry"] = expiry
+    user["last_reset_request"] = datetime.now().isoformat()
 
     if _use_dynamodb():
         _save_user_dynamo(user)

@@ -7,6 +7,16 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  # Remote state — prevents corruption from concurrent applies
+  # Uncomment and configure before first production deploy:
+  # backend "s3" {
+  #   bucket         = "replydesk-terraform-state"
+  #   key            = "prod/terraform.tfstate"
+  #   region         = "us-east-1"
+  #   dynamodb_table = "terraform-locks"
+  #   encrypt        = true
+  # }
 }
 
 provider "aws" {
@@ -75,6 +85,10 @@ resource "aws_dynamodb_table" "users" {
     type = "S"
   }
 
+  point_in_time_recovery {
+    enabled = true
+  }
+
   tags = {
     App = var.app_name
   }
@@ -91,6 +105,10 @@ resource "aws_dynamodb_table" "feedback" {
   attribute {
     name = "id"
     type = "S"
+  }
+
+  point_in_time_recovery {
+    enabled = true
   }
 
   tags = {

@@ -16,6 +16,9 @@ from auth import (
     MAX_GENERATIONS_PER_DAY,
 )
 from feedback_store import load_all_feedback
+from logger import get_logger
+
+log = get_logger("admin")
 
 
 # ─────────────────────────────────────────────
@@ -234,11 +237,13 @@ def _render_users(users: dict):
                     if user_is_admin:
                         if st.button("Revoke Admin", key=f"rev_{email}", use_container_width=True):
                             _set_admin_flag(email, False)
+                            log.info("admin_action", extra={"action": "revoke_admin", "target": email, "by": st.session_state.get("email")})
                             st.success("Admin revoked.")
                             st.rerun()
                     else:
                         if st.button("Make Admin", key=f"grant_{email}", use_container_width=True, type="primary"):
                             _set_admin_flag(email, True)
+                            log.info("admin_action", extra={"action": "grant_admin", "target": email, "by": st.session_state.get("email")})
                             st.success("Admin granted.")
                             st.rerun()
 
@@ -246,11 +251,13 @@ def _render_users(users: dict):
                     if locked:
                         if st.button("🔓 Unlock Account", key=f"unlock_{email}", use_container_width=True):
                             _set_locked_flag(email, False)
+                            log.info("admin_action", extra={"action": "unlock_account", "target": email, "by": st.session_state.get("email")})
                             st.success("Account unlocked.")
                             st.rerun()
                     else:
                         if st.button("🔒 Lock Account", key=f"lock_{email}", use_container_width=True):
                             _set_locked_flag(email, True)
+                            log.info("admin_action", extra={"action": "lock_account", "target": email, "by": st.session_state.get("email")})
                             st.warning("Account locked.")
                             st.rerun()
 
@@ -262,6 +269,7 @@ def _render_users(users: dict):
                             st.error("Password must be at least 6 characters.")
                         else:
                             _reset_user_password(email, new_pw)
+                            log.info("admin_action", extra={"action": "force_password_reset", "target": email, "by": st.session_state.get("email")})
                             st.success("Password updated.")
 
 
