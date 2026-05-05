@@ -30,8 +30,7 @@ if not render_auth_page():
 # ─────────────────────────────────────────────
 
 # Header
-st.sidebar.markdown(f"### ✉️ {APP_NAME}")
-st.sidebar.caption(APP_CAPTION)
+st.sidebar.image("assets/logo-wide.svg", use_container_width=True)
 
 # Navigation (top priority — immediately accessible)
 PAGES = ["🛠️ Tools", "📜 History", "💬 Feedback", "⚙️ Settings", "🔐 Admin"]

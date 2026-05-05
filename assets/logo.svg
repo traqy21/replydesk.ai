@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#0f3460"/>
+
+  <!-- Envelope body -->
+  <rect x="45" y="70" width="110" height="75" rx="8" ry="8" fill="#e0e0e0"/>
+
+  <!-- Envelope flap -->
+  <polygon points="45,70 100,110 155,70" fill="#ffffff" stroke="#0f3460" stroke-width="1"/>
+
+  <!-- Envelope shadow/depth -->
+  <rect x="45" y="130" width="110" height="15" rx="0" ry="8" fill="#c0c0c0" opacity="0.3"/>
+
+  <!-- AI Spark - top right -->
+  <g transform="translate(135, 55)">
+    <!-- Main spark -->
+    <path d="M0,-18 L3,-5 L15,-8 L5,-1 L12,10 L2,5 L0,18 L-2,5 L-12,10 L-5,-1 L-15,-8 L-3,-5 Z"
+          fill="#533483" opacity="0.9"/>
+    <!-- Inner glow -->
+    <circle cx="0" cy="0" r="4" fill="#a855f7"/>
+  </g>
+
+  <!-- AI circuit lines on envelope -->
+  <g stroke="#533483" stroke-width="1.5" fill="none" opacity="0.6">
+    <line x1="60" y1="100" x2="80" y2="100"/>
+    <line x1="80" y1="100" x2="80" y2="115"/>
+    <line x1="80" y1="115" x2="105" y2="115"/>
+    <circle cx="105" cy="115" r="3" fill="#533483"/>
+    <line x1="90" y1="100" x2="120" y2="100"/>
+    <line x1="120" y1="100" x2="120" y2="125"/>
+    <circle cx="120" cy="125" r="3" fill="#533483"/>
+    <circle cx="60" cy="100" r="2" fill="#533483"/>
+  </g>
+
+  <!-- Small dots for AI effect -->
+  <circle cx="55" cy="55" r="2" fill="#a855f7" opacity="0.5"/>
+  <circle cx="160" cy="85" r="1.5" fill="#a855f7" opacity="0.4"/>
+  <circle cx="40" cy="120" r="1.5" fill="#a855f7" opacity="0.3"/>
+</svg>

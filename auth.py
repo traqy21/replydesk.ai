@@ -297,7 +297,7 @@ def render_auth_page():
         _update_last_activity()
         return True
 
-    st.markdown("### ✉️ Replydesk AI")
+    st.image("assets/logo-wide.svg", use_container_width=False, width=300)
     st.caption("Your AI-powered assistant for professional communication")
 
     # Tabs for login and register
