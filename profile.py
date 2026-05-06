@@ -62,7 +62,15 @@ def render_profile_page():
     # ─── Job Position ───
     st.markdown("**Job Position**")
     current_job = user_data.get("job_position", "Virtual Assistant")
-    current_index = JOB_POSITIONS.index(current_job) if current_job in JOB_POSITIONS else 0
+
+    # If saved value isn't in the list, it's a custom "Other" value
+    if current_job in JOB_POSITIONS and current_job != "Other":
+        current_index = JOB_POSITIONS.index(current_job)
+        current_other = ""
+    else:
+        current_index = JOB_POSITIONS.index("Other")
+        current_other = current_job if current_job not in JOB_POSITIONS else ""
+
     new_job = st.selectbox(
         "Job Position",
         JOB_POSITIONS,
@@ -71,16 +79,29 @@ def render_profile_page():
         key="profile_job_position",
     )
 
+    if new_job == "Other":
+        new_job_other = st.text_input(
+            "Please specify your job position",
+            value=current_other,
+            placeholder="e.g. Legal Assistant, Translator...",
+            key="profile_job_other",
+        )
+    else:
+        new_job_other = ""
+
     # Save profile button
     if st.button("💾 Save Profile", use_container_width=True, key="save_profile_btn"):
-        user_data["display_name"] = new_display_name
-        user_data["job_position"] = new_job
-        _save_current_user(user_data)
+        final_job = new_job_other.strip() if new_job == "Other" else new_job
+        if new_job == "Other" and not new_job_other.strip():
+            st.error("Please specify your job position.")
+        else:
+            user_data["display_name"] = new_display_name
+            user_data["job_position"] = final_job
+            _save_current_user(user_data)
 
-        # Update session state
-        st.session_state.job_position = new_job
-        st.session_state.display_name = new_display_name
-        st.success("Profile updated successfully!")
+            st.session_state.job_position = final_job
+            st.session_state.display_name = new_display_name
+            st.success("Profile updated successfully!")
 
     st.divider()
 

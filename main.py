@@ -37,6 +37,15 @@ if reset_token or st.session_state.get("reset_flow") == "request":
     st.stop()
 
 # ─────────────────────────────────────────────
+# Email Verification Flow (via ?verify_token= param)
+# ─────────────────────────────────────────────
+verify_token = st.query_params.get("verify_token", "")
+if verify_token:
+    from pages.verify_email import render as render_verify
+    render_verify(token=verify_token)
+    st.stop()
+
+# ─────────────────────────────────────────────
 # Privacy Policy (accessible without login)
 # ─────────────────────────────────────────────
 if st.session_state.get("show_privacy_policy"):

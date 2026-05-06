@@ -236,10 +236,14 @@ def register_user(email: str, job_position: str, password: str, confirm_password
     if password != confirm_password:
         return False, "Passwords do not match."
 
+    verification_token = secrets.token_urlsafe(32)
+
     user_data = {
         "email": email.lower(),
         "job_position": job_position,
         "password_hash": _hash_password(password),
+        "is_verified": False,
+        "verification_token": verification_token,
     }
 
     if _use_dynamodb():
@@ -254,7 +258,101 @@ def register_user(email: str, job_position: str, password: str, confirm_password
         _save_users_json(users)
 
     log.info("user_registered", extra={"email": email.lower(), "job_position": job_position})
-    return True, "Registration successful! You can now log in."
+
+    # In production, send verification email
+    # In local dev (no DYNAMODB_TABLE), auto-verify so testing works without SES
+    if _use_dynamodb():
+        _send_verification_email(email.lower(), verification_token)
+        return True, "Registration successful! Please check your email to verify your account."
+    else:
+        # Auto-verify locally
+        users = _load_users_json()
+        users[email.lower()]["is_verified"] = True
+        users[email.lower()].pop("verification_token", None)
+        _save_users_json(users)
+        return True, "Registration successful! You can now log in."
+
+
+def _send_verification_email(email: str, token: str):
+    """Send an account verification email via AWS SES."""
+    verify_url = f"{APP_URL}?verify_token={token}"
+
+    subject = "Verify your Replydesk AI account"
+    body_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #1a1a2e;">Verify your email address</h2>
+        <p>Thanks for signing up for Replydesk AI! Click the button below to verify your email address and activate your account.</p>
+        <a href="{verify_url}"
+           style="display:inline-block; padding: 12px 24px; background-color: #4F8EF7;
+                  color: #ffffff; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+            Verify Email Address
+        </a>
+        <p style="color: #666; font-size: 13px;">
+            If you didn't create an account, you can safely ignore this email.
+        </p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+        <p style="color: #999; font-size: 12px;">Replydesk AI — Your AI-powered assistant for professional communication</p>
+    </body>
+    </html>
+    """
+    body_text = (
+        f"Verify your Replydesk AI account\n\n"
+        f"Click the link below to verify your email and activate your account:\n\n"
+        f"{verify_url}\n\n"
+        f"If you didn't create an account, ignore this email."
+    )
+
+    try:
+        import boto3
+        ses = boto3.client("ses", region_name=AWS_REGION)
+        ses.send_email(
+            Source=SES_SENDER_EMAIL,
+            Destination={"ToAddresses": [email]},
+            Message={
+                "Subject": {"Data": subject, "Charset": "UTF-8"},
+                "Body": {
+                    "Text": {"Data": body_text, "Charset": "UTF-8"},
+                    "Html": {"Data": body_html, "Charset": "UTF-8"},
+                },
+            },
+        )
+        log.info("verification_email_sent", extra={"email": email})
+    except Exception as e:
+        log.error("verification_email_failed", extra={"email": email, "error": str(e)}, exc_info=True)
+
+
+def verify_email_token(token: str) -> tuple[bool, str]:
+    """Verify an email using the token from the verification link.
+    Returns (success, message).
+    """
+    if _use_dynamodb():
+        table = _get_dynamodb_table()
+        response = table.scan(
+            FilterExpression="verification_token = :t",
+            ExpressionAttributeValues={":t": token},
+        )
+        items = response.get("Items", [])
+        user = items[0] if items else None
+    else:
+        users = _load_users_json()
+        user = next(
+            (u for u in users.values() if u.get("verification_token") == token),
+            None,
+        )
+
+    if not user:
+        return False, "Invalid or expired verification link."
+
+    if user.get("is_verified"):
+        return True, "Your email is already verified. You can log in."
+
+    user["is_verified"] = True
+    user.pop("verification_token", None)
+    _persist_user(user)
+
+    log.info("email_verified", extra={"email": user["email"]})
+    return True, "Email verified successfully! You can now log in."
 
 
 def seed_default_users():
@@ -271,6 +369,7 @@ def seed_default_users():
         "job_position": "Business Owner",
         "display_name": "Admin",
         "is_admin": True,
+        "is_verified": True,
         "password_hash": _hash_password(admin_password),
     }
 
@@ -303,6 +402,10 @@ def login_user(email: str, password: str) -> tuple[bool, str]:
 
     if not user:
         return False, "Invalid email or password."
+
+    # ── Email verification check ───────────────────────────────────────────
+    if not user.get("is_verified", False):
+        return False, "Please verify your email address before logging in. Check your inbox for the verification link."
 
     # ── Lockout check ──────────────────────────────────────────────────────
     lockout_until_str = user.get("lockout_until")
@@ -625,17 +728,29 @@ def render_auth_page():
         with tab_register:
             reg_email = st.text_input("Email Address", key="reg_email", placeholder="you@example.com")
             reg_job = st.selectbox("Job Position", JOB_POSITIONS, key="reg_job")
+            if reg_job == "Other":
+                reg_job_other = st.text_input(
+                    "Please specify your job position",
+                    key="reg_job_other",
+                    placeholder="e.g. Legal Assistant, Translator...",
+                )
+            else:
+                reg_job_other = ""
             reg_password = st.text_input("Password", type="password", key="reg_password", placeholder="Min. 6 characters")
             reg_confirm = st.text_input("Confirm Password", type="password", key="reg_confirm", placeholder="Repeat password")
 
             st.write("")
             if st.button("Create Account", use_container_width=True, key="register_btn", type="primary"):
-                success, message = register_user(reg_email, reg_job, reg_password, reg_confirm)
-                if success:
-                    st.success(message)
-                    st.info("👉 Switch to the **Login** tab to sign in.")
+                final_job = reg_job_other.strip() if reg_job == "Other" else reg_job
+                if reg_job == "Other" and not reg_job_other.strip():
+                    st.error("Please specify your job position.")
                 else:
-                    st.error(message)
+                    success, message = register_user(reg_email, final_job, reg_password, reg_confirm)
+                    if success:
+                        st.success(message)
+                        st.info("👉 Switch to the **Login** tab to sign in.")
+                    else:
+                        st.error(message)
 
             st.caption(
                 "By creating an account you agree to our "
