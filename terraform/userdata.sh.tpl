@@ -62,6 +62,7 @@ docker run -d \
   -e OPENAI_API_KEY="$OPENAI_API_KEY" \
   -e ADMIN_EMAIL="$ADMIN_EMAIL" \
   -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+  -e SES_SENDER_EMAIL="${ses_sender_email}" \
   -p 8501:8501 \
   "${ecr_repo}:latest"
 
@@ -162,6 +163,7 @@ docker run -d \
   -e OPENAI_API_KEY="$OPENAI_API_KEY" \
   -e ADMIN_EMAIL="$ADMIN_EMAIL" \
   -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+  -e SES_SENDER_EMAIL="noreply@replydesk-ai.com" \
   -p 8501:8501 \
   "$ECR_REPO:latest"
 UPDATE

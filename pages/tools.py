@@ -15,6 +15,8 @@ TOOLS = {
     "Email Generator": {"icon": "📧", "desc": "Draft a structured email from your notes or brief."},
     "Task Summary":    {"icon": "📋", "desc": "Condense your notes into clear, actionable bullet points."},
     "Daily Report":    {"icon": "📊", "desc": "Generate a formatted end-of-day status report."},
+    "Meeting Notes":   {"icon": "🗒️", "desc": "Turn raw meeting notes into a structured summary with action items."},
+    "Follow-up Email": {"icon": "↩️", "desc": "Write a professional follow-up based on a previous conversation."},
 }
 
 TONES = ["Friendly", "Formal", "Professional", "Casual"]
@@ -73,6 +75,9 @@ def render():
             label_visibility="collapsed",
             key="tool_input",
         )
+
+        if user_input:
+            st.caption(f"📝 {len(user_input.split())} words · {len(user_input)} characters")
 
         tone_col, btn_col = st.columns([1, 2], gap="small")
         with tone_col:
@@ -149,7 +154,12 @@ def render():
                 label_visibility="collapsed",
             )
 
-            c1, c2, c3 = st.columns(3)
+            # Word / character count
+            word_count = len(edited.split())
+            char_count = len(edited)
+            st.caption(f"📝 {word_count} words · {char_count} characters")
+
+            c1, c2, c3, c4 = st.columns(4)
             with c1:
                 if st.button("💾 Save", use_container_width=True, key="save_btn"):
                     st.session_state.generated_result = edited
@@ -158,6 +168,15 @@ def render():
                 if st.button("📋 Copy", use_container_width=True, key="copy_btn"):
                     st.code(st.session_state.generated_result, language="markdown")
             with c3:
+                st.download_button(
+                    "⬇️ Export",
+                    data=edited,
+                    file_name=f"{tool.lower().replace(' ', '_')}.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="export_btn",
+                )
+            with c4:
                 if st.button("🗑️ Clear", use_container_width=True, key="clear_btn"):
                     st.session_state.generated_result = ""
                     st.rerun()
@@ -191,5 +210,7 @@ def _get_placeholder(tool: str) -> str:
         "Email Generator": "Describe what the email should cover...\n\nE.g. Send a follow-up to John about the proposal we sent last week.",
         "Task Summary": "Paste your raw notes or task list here...\n\nE.g. - Called client\n- Updated spreadsheet\n- Reviewed draft",
         "Daily Report": "List your tasks and updates for today...\n\nE.g. Completed onboarding doc, reviewed 3 tickets, pending: client call tomorrow.",
+        "Meeting Notes": "Paste your raw meeting notes here...\n\nE.g. Discussed Q2 targets. John to send report by Friday. Budget approved for new hire.",
+        "Follow-up Email": "Describe the context of the previous interaction...\n\nE.g. Sent a proposal to Sarah last week about the website redesign project. No response yet.",
     }
     return placeholders.get(tool, "Enter your text here...")

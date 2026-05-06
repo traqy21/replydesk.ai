@@ -17,7 +17,7 @@ aws ecr get-login-password --region "$AWS_REGION" | \
 
 echo "🏗️  Building Docker image for linux/arm64 (t4g instances)..."
 docker buildx create --use --name replydesk-builder 2>/dev/null || true
-docker buildx build --platform linux/arm64 -t "$APP_NAME" --load .
+docker buildx build --platform linux/arm64 -t "$APP_NAME" --load -f ../Dockerfile ..
 
 echo "🏷️  Tagging image..."
 docker tag "$APP_NAME:latest" "$ECR_REPO:latest"

@@ -37,7 +37,7 @@ LOCKOUT_DURATION_MINUTES = 15
 RESET_TOKEN_EXPIRY_MINUTES = 30
 
 # SES config
-SES_SENDER_EMAIL = os.getenv("SES_SENDER_EMAIL", "noreply@replydesk.ai")
+SES_SENDER_EMAIL = os.getenv("SES_SENDER_EMAIL", "noreply@replydesk-ai.com")
 APP_URL = os.getenv("APP_URL", "http://localhost:8501")
 
 # Job positions dropdown options
@@ -355,7 +355,63 @@ def verify_email_token(token: str) -> tuple[bool, str]:
     return True, "Email verified successfully! You can now log in."
 
 
+def resend_verification_email(email: str) -> tuple[bool, str]:
+    """Resend the verification email for an unverified account."""
+    email = email.lower()
+
+    if not _is_valid_email(email):
+        return False, "Please enter a valid email address."
+
+    if _use_dynamodb():
+        user = _load_user_dynamo(email)
+    else:
+        users = _load_users_json()
+        user = users.get(email)
+
+    if not user:
+        return True, "If that email is registered, a verification link has been sent."
+
+    if user.get("is_verified"):
+        return False, "This account is already verified. You can log in."
+
+    # Generate a fresh token
+    token = secrets.token_urlsafe(32)
+    user["verification_token"] = token
+    _persist_user(user)
+
+    _send_verification_email(email, token)
+    log.info("verification_email_resent", extra={"email": email})
+    return True, "Verification email resent. Please check your inbox."
+
+
 def seed_default_users():
+    """Seed the default admin user from environment variables if not already present."""
+    admin_email = os.getenv("ADMIN_EMAIL", "").lower()
+    admin_password = os.getenv("ADMIN_PASSWORD", "")
+
+    if not admin_email or not admin_password:
+        log.warning("seed_skipped", extra={"reason": "ADMIN_EMAIL or ADMIN_PASSWORD not set in environment"})
+        return
+
+    user_record = {
+        "email": admin_email,
+        "job_position": "Business Owner",
+        "display_name": "Admin",
+        "is_admin": True,
+        "is_verified": True,
+        "password_hash": _hash_password(admin_password),
+    }
+
+    if _use_dynamodb():
+        if not _user_exists_dynamo(admin_email):
+            _save_user_dynamo(user_record)
+            log.info("admin_user_seeded", extra={"email": admin_email, "backend": "dynamodb"})
+    else:
+        users = _load_users_json()
+        if admin_email not in users:
+            users[admin_email] = user_record
+            _save_users_json(users)
+            log.info("admin_user_seeded", extra={"email": admin_email, "backend": "json"})
     """Seed the default admin user from environment variables if not already present."""
     admin_email = os.getenv("ADMIN_EMAIL", "").lower()
     admin_password = os.getenv("ADMIN_PASSWORD", "")
@@ -720,6 +776,18 @@ def render_auth_page():
                     st.rerun()
                 else:
                     st.error(message)
+                    # Show resend button if account is unverified
+                    if "verify your email" in message.lower():
+                        st.session_state.show_resend = login_email
+
+            if st.session_state.get("show_resend"):
+                if st.button("📨 Resend Verification Email", use_container_width=True, key="resend_btn", type="secondary"):
+                    ok, msg = resend_verification_email(st.session_state.show_resend)
+                    if ok:
+                        st.success(msg)
+                        st.session_state.show_resend = None
+                    else:
+                        st.error(msg)
 
             if st.button("Forgot password?", use_container_width=True, key="forgot_pw_btn", type="secondary"):
                 st.session_state.reset_flow = "request"

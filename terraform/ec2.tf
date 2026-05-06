@@ -97,9 +97,6 @@ resource "aws_iam_role_policy" "ec2" {
         Effect = "Allow"
         Action = ["ses:SendEmail", "ses:SendRawEmail"]
         Resource = "*"
-        Condition = {
-          StringEquals = { "ses:FromAddress" = var.ses_sender_email }
-        }
       },
       {
         Effect = "Allow"
