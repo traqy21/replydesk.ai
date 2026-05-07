@@ -79,13 +79,13 @@ cat > /opt/replydesk/static/index.html <<'OGHTML'
   <meta name="description" content="Generate client replies, emails, meeting notes, daily reports and more in seconds. Free to try — 10 generations per day." />
   <meta property="og:title" content="Replydesk AI — Free AI Writing Tools for Professionals" />
   <meta property="og:description" content="Generate client replies, emails, meeting notes, daily reports and more in seconds. Free to try — 10 generations per day, no credit card required." />
-  <meta property="og:image" content="https://replydesk-ai.com/og-image.svg" />
+  <meta property="og:image" content="https://replydesk-ai.com/og-image.png" />
   <meta property="og:url" content="https://replydesk-ai.com" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Replydesk AI — Free AI Writing Tools for Professionals" />
   <meta name="twitter:description" content="Generate client replies, emails, meeting notes, daily reports and more in seconds. Free to try." />
-  <meta name="twitter:image" content="https://replydesk-ai.com/og-image.svg" />
+  <meta name="twitter:image" content="https://replydesk-ai.com/og-image.png" />
   <meta http-equiv="refresh" content="0; url=https://replydesk-ai.com/" />
 </head>
 <body><p>Loading <a href="https://replydesk-ai.com/">Replydesk AI</a>...</p></body>

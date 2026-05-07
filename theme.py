@@ -122,13 +122,13 @@ def apply_theme():
     <head>
         <meta property="og:title" content="Replydesk AI — Free AI Writing Tools for Professionals" />
         <meta property="og:description" content="Generate client replies, emails, meeting notes, daily reports and more in seconds. Free to try — 10 generations per day, no credit card required." />
-        <meta property="og:image" content="https://replydesk-ai.com/og-image.svg" />
+        <meta property="og:image" content="https://replydesk-ai.com/og-image.png" />
         <meta property="og:url" content="{app_url}" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Replydesk AI — Free AI Writing Tools for Professionals" />
         <meta name="twitter:description" content="Generate client replies, emails, meeting notes, daily reports and more in seconds. Free to try." />
-        <meta name="twitter:image" content="https://replydesk-ai.com/og-image.svg" />
+        <meta name="twitter:image" content="https://replydesk-ai.com/og-image.png" />
     </head>
     """, unsafe_allow_html=True)
 
