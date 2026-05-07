@@ -341,11 +341,11 @@ def register_user(email: str, job_position: str, password: str, confirm_password
 
 
 def _send_verification_email(email: str, token: str):
-    """Send an account verification email via AWS SES."""
+    """Send an account verification email."""
+    from email_service import send_email
     verify_url = f"{APP_URL}?verify_token={token}"
-
     subject = "Verify your Replydesk AI account"
-    body_html = f"""
+    html = f"""
     <html>
     <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #1a1a2e;">Verify your email address</h2>
@@ -355,38 +355,22 @@ def _send_verification_email(email: str, token: str):
                   color: #ffffff; text-decoration: none; border-radius: 6px; margin: 16px 0;">
             Verify Email Address
         </a>
-        <p style="color: #666; font-size: 13px;">
-            If you didn't create an account, you can safely ignore this email.
-        </p>
+        <p style="color: #666; font-size: 13px;">If you didn't create an account, you can safely ignore this email.</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
         <p style="color: #999; font-size: 12px;">Replydesk AI — Your AI-powered assistant for professional communication</p>
     </body>
     </html>
     """
-    body_text = (
+    text = (
         f"Verify your Replydesk AI account\n\n"
-        f"Click the link below to verify your email and activate your account:\n\n"
-        f"{verify_url}\n\n"
+        f"Click the link below to verify your email:\n\n{verify_url}\n\n"
         f"If you didn't create an account, ignore this email."
     )
-
-    try:
-        import boto3
-        ses = boto3.client("ses", region_name=AWS_REGION)
-        ses.send_email(
-            Source=SES_SENDER_EMAIL,
-            Destination={"ToAddresses": [email]},
-            Message={
-                "Subject": {"Data": subject, "Charset": "UTF-8"},
-                "Body": {
-                    "Text": {"Data": body_text, "Charset": "UTF-8"},
-                    "Html": {"Data": body_html, "Charset": "UTF-8"},
-                },
-            },
-        )
+    ok, msg = send_email(email, subject, html, text)
+    if ok:
         log.info("verification_email_sent", extra={"email": email})
-    except Exception as e:
-        log.error("verification_email_failed", extra={"email": email, "error": str(e)}, exc_info=True)
+    else:
+        log.error("verification_email_failed", extra={"email": email, "error": msg})
 
 
 def verify_email_token(token: str) -> tuple[bool, str]:
@@ -428,8 +412,9 @@ def verify_email_token(token: str) -> tuple[bool, str]:
 
 def _send_welcome_email(email: str):
     """Send a welcome email after account verification."""
+    from email_service import send_email
     subject = "Welcome to Replydesk AI 🎉"
-    body_html = f"""
+    html = f"""
     <html>
     <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #1a1a2e;">Welcome to Replydesk AI!</h2>
@@ -449,39 +434,20 @@ def _send_welcome_email(email: str):
                   color: #ffffff; text-decoration: none; border-radius: 6px; margin: 16px 0;">
             Start Using Replydesk AI
         </a>
-        <p style="color: #666; font-size: 13px;">
-            If you have any questions or feedback, use the Feedback page inside the app.
-        </p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
         <p style="color: #999; font-size: 12px;">Replydesk AI — Your AI-powered assistant for professional communication</p>
     </body>
     </html>
     """
-    body_text = (
+    text = (
         f"Welcome to Replydesk AI!\n\n"
         f"Your account is verified. You have 10 free generations per day.\n\n"
         f"Get started at: {APP_URL}\n\n"
-        f"Tools available: Client Reply, Email Generator, Task Summary, Daily Report, "
+        f"Tools: Client Reply, Email Generator, Task Summary, Daily Report, "
         f"Meeting Notes, Follow-up Email, Tone Rewriter."
     )
-
-    try:
-        import boto3
-        ses = boto3.client("ses", region_name=AWS_REGION)
-        ses.send_email(
-            Source=SES_SENDER_EMAIL,
-            Destination={"ToAddresses": [email]},
-            Message={
-                "Subject": {"Data": subject, "Charset": "UTF-8"},
-                "Body": {
-                    "Text": {"Data": body_text, "Charset": "UTF-8"},
-                    "Html": {"Data": body_html, "Charset": "UTF-8"},
-                },
-            },
-        )
-        log.info("welcome_email_sent", extra={"email": email})
-    except Exception as e:
-        log.error("welcome_email_failed", extra={"email": email, "error": str(e)})
+    send_email(email, subject, html, text)
+    log.info("welcome_email_sent", extra={"email": email})
 
 
 def resend_verification_email(email: str) -> tuple[bool, str]:
@@ -770,56 +736,33 @@ def reset_password_with_token(token: str, new_password: str, confirm_password: s
 
 
 def send_reset_email(email: str, token: str) -> tuple[bool, str]:
-    """Send a password reset email via AWS SES. Returns (success, message)."""
+    """Send a password reset email. Returns (success, message)."""
+    from email_service import send_email
     reset_url = f"{APP_URL}?reset_token={token}"
-
     subject = "Reset your Replydesk AI password"
-    body_html = f"""
+    html = f"""
     <html>
     <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <img src="{APP_URL}/assets/logo-wide.svg" alt="Replydesk AI" style="height: 40px; margin-bottom: 24px;" />
         <h2 style="color: #1a1a2e;">Reset your password</h2>
         <p>We received a request to reset the password for your Replydesk AI account.</p>
         <p>Click the button below to choose a new password. This link expires in <strong>{RESET_TOKEN_EXPIRY_MINUTES} minutes</strong>.</p>
         <a href="{reset_url}"
-           style="display:inline-block; padding: 12px 24px; background-color: #0f3460;
+           style="display:inline-block; padding: 12px 24px; background-color: #4F8EF7;
                   color: #ffffff; text-decoration: none; border-radius: 6px; margin: 16px 0;">
             Reset Password
         </a>
-        <p style="color: #666; font-size: 13px;">
-            If you didn't request this, you can safely ignore this email.<br/>
-            This link will expire at {(datetime.now() + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES)).strftime("%Y-%m-%d %H:%M UTC")}.
-        </p>
+        <p style="color: #666; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
         <p style="color: #999; font-size: 12px;">Replydesk AI — Your AI-powered assistant for professional communication</p>
     </body>
     </html>
     """
-    body_text = (
+    text = (
         f"Reset your Replydesk AI password\n\n"
-        f"Click the link below to reset your password (expires in {RESET_TOKEN_EXPIRY_MINUTES} minutes):\n\n"
-        f"{reset_url}\n\n"
-        f"If you didn't request this, ignore this email."
+        f"Click the link below (expires in {RESET_TOKEN_EXPIRY_MINUTES} minutes):\n\n"
+        f"{reset_url}\n\nIf you didn't request this, ignore this email."
     )
-
-    try:
-        import boto3
-        ses = boto3.client("ses", region_name=AWS_REGION)
-        ses.send_email(
-            Source=SES_SENDER_EMAIL,
-            Destination={"ToAddresses": [email]},
-            Message={
-                "Subject": {"Data": subject, "Charset": "UTF-8"},
-                "Body": {
-                    "Text": {"Data": body_text, "Charset": "UTF-8"},
-                    "Html": {"Data": body_html, "Charset": "UTF-8"},
-                },
-            },
-        )
-        return True, "Reset email sent."
-    except Exception as e:
-        log.error("ses_send_failed", extra={"email": email, "error": str(e)}, exc_info=True)
-        return False, f"Failed to send email: {e}"
+    return send_email(email, subject, html, text)
 
 
 # ─────────────────────────────────────────────

@@ -109,6 +109,8 @@
 - [x] Secrets Manager for API keys and admin credentials
 - [x] AWS SES for transactional emails
 - [x] SES sender verified (noreply@replydesk-ai.com)
+- [x] Resend integration as SES alternative (active)
+- [x] Email provider abstraction (switch between Resend/SES via env var)
 - [x] CloudWatch logging (structured JSON via watchtower)
 - [x] CloudWatch metric alarms (error rate + lockouts)
 - [x] Terraform infrastructure as code
