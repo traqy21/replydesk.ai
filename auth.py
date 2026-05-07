@@ -27,7 +27,7 @@ AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 SESSION_TIMEOUT_MINUTES = 30
 
 # Rate limiting: max generations per day per user
-MAX_GENERATIONS_PER_DAY = 50
+MAX_GENERATIONS_PER_DAY = 10
 
 # Brute-force protection
 MAX_FAILED_LOGIN_ATTEMPTS = 5
@@ -167,37 +167,104 @@ def _check_session_timeout() -> bool:
 
 
 # ─────────────────────────────────────────────
-# Rate Limiting
+# Rate Limiting — persisted to user record
 # ─────────────────────────────────────────────
+
+def _load_generation_count(email: str) -> tuple[int, str]:
+    """Load today's generation count from the user record.
+    Returns (count, date).
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+    user = _get_user_profile(email)
+    stored_date = user.get("rate_limit_date", "")
+
+    # If total_generations doesn't exist yet, seed it from generation_count
+    if "total_generations" not in user:
+        seed_total = int(user.get("generation_count", 0)) if stored_date == today else 0
+        st.session_state.total_generations = seed_total
+        # Persist the seeded value
+        _save_generation_count(email,
+                               int(user.get("generation_count", 0)),
+                               stored_date or today,
+                               seed_total)
+    else:
+        st.session_state.total_generations = int(user.get("total_generations", 0))
+
+    if stored_date != today:
+        return 0, today
+    return int(user.get("generation_count", 0)), today
+
+
+def _save_generation_count(email: str, count: int, date: str, total: int = None):
+    """Persist the generation count to the user record."""
+    if _use_dynamodb():
+        update_expr = "SET generation_count = :c, rate_limit_date = :d"
+        expr_values = {":c": count, ":d": date}
+        if total is not None:
+            update_expr += ", total_generations = :t"
+            expr_values[":t"] = total
+        _get_dynamodb_table().update_item(
+            Key={"email": email.lower()},
+            UpdateExpression=update_expr,
+            ExpressionAttributeValues=expr_values,
+        )
+    else:
+        users = _load_users_json()
+        if email.lower() in users:
+            users[email.lower()]["generation_count"] = count
+            users[email.lower()]["rate_limit_date"] = date
+            if total is not None:
+                users[email.lower()]["total_generations"] = total
+            _save_users_json(users)
+
 
 def check_rate_limit() -> tuple[bool, str]:
     """Check if the user has exceeded the daily generation limit.
+    Loads count from storage and syncs to session state.
     Returns (allowed, message).
     """
+    email = st.session_state.get("email", "")
     today = datetime.now().strftime("%Y-%m-%d")
 
-    # Reset counter if it's a new day
-    if st.session_state.get("rate_limit_date") != today:
-        st.session_state.rate_limit_date = today
-        st.session_state.generation_count = 0
+    # Load from storage if session is stale or new day
+    if (st.session_state.get("rate_limit_date") != today or
+            not st.session_state.get("_count_loaded")):
+        if email:
+            count, date = _load_generation_count(email)
+            st.session_state.generation_count = count
+            st.session_state.rate_limit_date = date
+            st.session_state._count_loaded = True
+        else:
+            if st.session_state.get("rate_limit_date") != today:
+                st.session_state.rate_limit_date = today
+                st.session_state.generation_count = 0
 
     if st.session_state.generation_count >= MAX_GENERATIONS_PER_DAY:
-        remaining_msg = "You've reached your daily limit of {} generations. Try again tomorrow.".format(
-            MAX_GENERATIONS_PER_DAY
+        return False, (
+            f"You've reached your daily limit of {MAX_GENERATIONS_PER_DAY} generations. "
+            f"Try again tomorrow."
         )
-        return False, remaining_msg
 
     return True, ""
 
 
 def increment_generation_count():
-    """Increment the daily generation counter."""
-    st.session_state.generation_count = st.session_state.get("generation_count", 0) + 1
+    """Increment the daily generation counter and persist to storage."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    new_count = st.session_state.get("generation_count", 0) + 1
+    new_total = st.session_state.get("total_generations", 0) + 1
+    st.session_state.generation_count = new_count
+    st.session_state.total_generations = new_total
+    st.session_state.rate_limit_date = today
+
+    email = st.session_state.get("email", "")
+    if email:
+        _save_generation_count(email, new_count, today, new_total)
 
 
 def get_remaining_generations() -> int:
     """Get the number of remaining generations for today."""
-    return MAX_GENERATIONS_PER_DAY - st.session_state.get("generation_count", 0)
+    return max(0, MAX_GENERATIONS_PER_DAY - st.session_state.get("generation_count", 0))
 
 
 # ─────────────────────────────────────────────
@@ -376,7 +443,7 @@ def _send_welcome_email(email: str):
             <li>↩️ <strong>Follow-up Email</strong> — write professional follow-ups</li>
             <li>✏️ <strong>Tone Rewriter</strong> — rewrite any message in a different tone</li>
         </ul>
-        <p>You have <strong>50 free generations per day</strong> to get started.</p>
+        <p>You have <strong>10 free generations per day</strong> to get started.</p>
         <a href="{APP_URL}"
            style="display:inline-block; padding: 12px 24px; background-color: #4F8EF7;
                   color: #ffffff; text-decoration: none; border-radius: 6px; margin: 16px 0;">
@@ -392,7 +459,7 @@ def _send_welcome_email(email: str):
     """
     body_text = (
         f"Welcome to Replydesk AI!\n\n"
-        f"Your account is verified. You have 50 free generations per day.\n\n"
+        f"Your account is verified. You have 10 free generations per day.\n\n"
         f"Get started at: {APP_URL}\n\n"
         f"Tools available: Client Reply, Email Generator, Task Summary, Daily Report, "
         f"Meeting Notes, Follow-up Email, Tone Rewriter."
@@ -808,6 +875,16 @@ def render_auth_page():
                     st.session_state.job_position = user_data.get("job_position", "Virtual Assistant")
                     st.session_state.display_name = user_data.get("display_name", "")
                     st.session_state.is_admin = bool(user_data.get("is_admin", False))
+                    # Load persisted generation count
+                    today = datetime.now().strftime("%Y-%m-%d")
+                    stored_date = user_data.get("rate_limit_date", "")
+                    if stored_date == today:
+                        st.session_state.generation_count = int(user_data.get("generation_count", 0))
+                    else:
+                        st.session_state.generation_count = 0
+                    st.session_state.rate_limit_date = today
+                    st.session_state.total_generations = int(user_data.get("total_generations", 0))
+                    st.session_state._count_loaded = True
                     st.rerun()
                 else:
                     st.error(message)

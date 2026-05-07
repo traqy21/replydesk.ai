@@ -94,6 +94,7 @@
 - [ ] Terms of Service page
 - [ ] Welcome email on registration
 - [ ] Usage dashboard on History page
+- [ ] **[Pro feature]** Persistent generation history across sessions (store in DynamoDB, load on login)
 
 ## Deployment & DevOps
 

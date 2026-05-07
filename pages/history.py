@@ -1,8 +1,5 @@
 """History page — view and manage past generations."""
 
-from collections import Counter
-from datetime import datetime, timedelta
-
 import streamlit as st
 
 
@@ -16,44 +13,7 @@ def render():
         return
 
     history = st.session_state.history
-
-    # ── Usage Dashboard ────────────────────────────────────────────────────
     st.divider()
-    st.markdown("**📊 Usage Dashboard**")
-
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.metric("Total Generations", len(history))
-    with c2:
-        tools_used = set(e["tool"] for e in history)
-        st.metric("Tools Used", len(tools_used))
-    with c3:
-        from auth import get_remaining_generations
-        st.metric("Remaining Today", get_remaining_generations())
-    with c4:
-        # Generations today
-        today = datetime.now().strftime("%Y-%m-%d")
-        today_count = sum(1 for e in history if e["timestamp"].startswith(today))
-        st.metric("Generated Today", today_count)
-
-    st.write("")
-
-    # Charts side by side
-    chart_left, chart_right = st.columns(2, gap="large")
-
-    with chart_left:
-        st.caption("Generations by tool")
-        tool_counts = Counter(e["tool"] for e in history)
-        st.bar_chart(dict(tool_counts))
-
-    with chart_right:
-        st.caption("Generations by tone")
-        tone_counts = Counter(e["tone"] for e in history)
-        st.bar_chart(dict(tone_counts))
-
-    # ── History entries ────────────────────────────────────────────────────
-    st.divider()
-    st.markdown("**📋 Generation Log**")
 
     # Filter
     filter_col, _ = st.columns([1, 3])

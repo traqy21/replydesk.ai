@@ -123,6 +123,8 @@ def render():
                         messages=[{"role": "user", "content": prompt}]
                     )
                     result = response.choices[0].message.content
+                    # Bump output key version to force widget re-render with new content
+                    st.session_state.output_version = st.session_state.get("output_version", 0) + 1
                     st.session_state.generated_result = result
                     add_to_history(tool, tone, user_input, result)
                     increment_generation_count()
@@ -147,11 +149,12 @@ def render():
 
         # ── Output display ─────────────────────────────────────────────────
         if st.session_state.get("generated_result"):
+            ov = st.session_state.get("output_version", 0)
             edited = st.text_area(
                 "Result",
                 value=st.session_state.generated_result,
                 height=260,
-                key="output_editor",
+                key=f"output_editor_{ov}",
                 label_visibility="collapsed",
             )
 
@@ -175,7 +178,7 @@ def render():
                     file_name=f"{tool.lower().replace(' ', '_')}.txt",
                     mime="text/plain",
                     use_container_width=True,
-                    key="export_btn",
+                    key=f"export_btn_{ov}",
                 )
             with c4:
                 if st.button("🗑️ Clear", use_container_width=True, key="clear_btn"):

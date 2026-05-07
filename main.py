@@ -107,7 +107,7 @@ if not render_auth_page():
 st.sidebar.image("assets/logo-wide.svg", use_container_width=True)
 
 # Navigation (top priority — immediately accessible)
-PAGES = ["🛠️ Tools", "📜 History", "💬 Feedback", "⚙️ Settings"]
+PAGES = ["🛠️ Tools", "📊 Dashboard", "📜 History", "💬 Feedback", "⚙️ Settings"]
 if st.session_state.get("is_admin"):
     PAGES.append("🔐 Admin")
 
@@ -169,6 +169,10 @@ if st.sidebar.button("📋 Terms of Service", use_container_width=True, type="se
 
 if st.session_state.current_page == "Tools":
     from pages.tools import render
+    render()
+
+elif st.session_state.current_page == "Dashboard":
+    from pages.dashboard import render
     render()
 
 elif st.session_state.current_page == "History":
