@@ -352,7 +352,69 @@ def verify_email_token(token: str) -> tuple[bool, str]:
     _persist_user(user)
 
     log.info("email_verified", extra={"email": user["email"]})
+
+    # Send welcome email after successful verification
+    _send_welcome_email(user["email"])
+
     return True, "Email verified successfully! You can now log in."
+
+
+def _send_welcome_email(email: str):
+    """Send a welcome email after account verification."""
+    subject = "Welcome to Replydesk AI 🎉"
+    body_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #1a1a2e;">Welcome to Replydesk AI!</h2>
+        <p>Your account is now verified and ready to use. Here's what you can do:</p>
+        <ul style="line-height: 2;">
+            <li>💬 <strong>Client Reply</strong> — respond to clients professionally</li>
+            <li>📧 <strong>Email Generator</strong> — draft emails from rough notes</li>
+            <li>📋 <strong>Task Summary</strong> — turn notes into bullet points</li>
+            <li>📊 <strong>Daily Report</strong> — generate end-of-day status reports</li>
+            <li>🗒️ <strong>Meeting Notes</strong> — structure raw meeting notes</li>
+            <li>↩️ <strong>Follow-up Email</strong> — write professional follow-ups</li>
+            <li>✏️ <strong>Tone Rewriter</strong> — rewrite any message in a different tone</li>
+        </ul>
+        <p>You have <strong>50 free generations per day</strong> to get started.</p>
+        <a href="{APP_URL}"
+           style="display:inline-block; padding: 12px 24px; background-color: #4F8EF7;
+                  color: #ffffff; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+            Start Using Replydesk AI
+        </a>
+        <p style="color: #666; font-size: 13px;">
+            If you have any questions or feedback, use the Feedback page inside the app.
+        </p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+        <p style="color: #999; font-size: 12px;">Replydesk AI — Your AI-powered assistant for professional communication</p>
+    </body>
+    </html>
+    """
+    body_text = (
+        f"Welcome to Replydesk AI!\n\n"
+        f"Your account is verified. You have 50 free generations per day.\n\n"
+        f"Get started at: {APP_URL}\n\n"
+        f"Tools available: Client Reply, Email Generator, Task Summary, Daily Report, "
+        f"Meeting Notes, Follow-up Email, Tone Rewriter."
+    )
+
+    try:
+        import boto3
+        ses = boto3.client("ses", region_name=AWS_REGION)
+        ses.send_email(
+            Source=SES_SENDER_EMAIL,
+            Destination={"ToAddresses": [email]},
+            Message={
+                "Subject": {"Data": subject, "Charset": "UTF-8"},
+                "Body": {
+                    "Text": {"Data": body_text, "Charset": "UTF-8"},
+                    "Html": {"Data": body_html, "Charset": "UTF-8"},
+                },
+            },
+        )
+        log.info("welcome_email_sent", extra={"email": email})
+    except Exception as e:
+        log.error("welcome_email_failed", extra={"email": email, "error": str(e)})
 
 
 def resend_verification_email(email: str) -> tuple[bool, str]:
@@ -385,33 +447,6 @@ def resend_verification_email(email: str) -> tuple[bool, str]:
 
 
 def seed_default_users():
-    """Seed the default admin user from environment variables if not already present."""
-    admin_email = os.getenv("ADMIN_EMAIL", "").lower()
-    admin_password = os.getenv("ADMIN_PASSWORD", "")
-
-    if not admin_email or not admin_password:
-        log.warning("seed_skipped", extra={"reason": "ADMIN_EMAIL or ADMIN_PASSWORD not set in environment"})
-        return
-
-    user_record = {
-        "email": admin_email,
-        "job_position": "Business Owner",
-        "display_name": "Admin",
-        "is_admin": True,
-        "is_verified": True,
-        "password_hash": _hash_password(admin_password),
-    }
-
-    if _use_dynamodb():
-        if not _user_exists_dynamo(admin_email):
-            _save_user_dynamo(user_record)
-            log.info("admin_user_seeded", extra={"email": admin_email, "backend": "dynamodb"})
-    else:
-        users = _load_users_json()
-        if admin_email not in users:
-            users[admin_email] = user_record
-            _save_users_json(users)
-            log.info("admin_user_seeded", extra={"email": admin_email, "backend": "json"})
     """Seed the default admin user from environment variables if not already present."""
     admin_email = os.getenv("ADMIN_EMAIL", "").lower()
     admin_password = os.getenv("ADMIN_PASSWORD", "")
@@ -827,6 +862,9 @@ def render_auth_page():
             )
             if st.button("📄 Privacy Policy", use_container_width=True, key="reg_privacy_btn", type="secondary"):
                 st.session_state.show_privacy_policy = True
+                st.rerun()
+            if st.button("📋 Terms of Service", use_container_width=True, key="reg_tos_btn", type="secondary"):
+                st.session_state.show_tos = True
                 st.rerun()
 
     return False

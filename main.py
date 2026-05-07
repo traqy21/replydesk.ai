@@ -12,7 +12,12 @@ from logger import get_logger
 log = get_logger("main")
 
 # Page config
-st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="assets/logo.svg")
+st.set_page_config(
+    page_title=APP_NAME,
+    layout="wide",
+    page_icon="assets/logo.svg",
+    initial_sidebar_state="collapsed",
+)
 
 # Initialize state
 init_session_state()
@@ -54,6 +59,17 @@ if st.session_state.get("show_privacy_policy"):
         st.rerun()
     from pages.privacy_policy import render as render_privacy
     render_privacy()
+    st.stop()
+
+# ─────────────────────────────────────────────
+# Terms of Service (accessible without login)
+# ─────────────────────────────────────────────
+if st.session_state.get("show_tos"):
+    if st.button("← Back", key="tos_back_btn", type="secondary"):
+        st.session_state.show_tos = False
+        st.rerun()
+    from pages.terms_of_service import render as render_tos
+    render_tos()
     st.stop()
 
 # ─────────────────────────────────────────────
@@ -142,6 +158,9 @@ if st.sidebar.button("🚪 Logout", use_container_width=True):
 st.sidebar.divider()
 if st.sidebar.button("📄 Privacy Policy", use_container_width=True, type="secondary"):
     st.session_state.show_privacy_policy = True
+    st.rerun()
+if st.sidebar.button("📋 Terms of Service", use_container_width=True, type="secondary"):
+    st.session_state.show_tos = True
     st.rerun()
 
 # ─────────────────────────────────────────────

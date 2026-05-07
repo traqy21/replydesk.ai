@@ -45,7 +45,7 @@ echo "📡 Sending update command to instance $INSTANCE_ID..."
 COMMAND_ID=$(aws ssm send-command \
   --instance-ids "$INSTANCE_ID" \
   --document-name "AWS-RunShellScript" \
-  --parameters 'commands=["/opt/replydesk/update.sh"]' \
+  --parameters 'commands=["docker system prune -af --filter \"until=24h\" && /opt/replydesk/update.sh"]' \
   --region "$AWS_REGION" \
   --query "Command.CommandId" \
   --output text)
