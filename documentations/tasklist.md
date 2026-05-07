@@ -17,6 +17,7 @@
 - [x] Daily Report tool
 - [x] Meeting Notes summarizer
 - [x] Follow-up Email generator
+- [x] Tone Rewriter (rewrite any message in a selected tone)
 - [x] Tone selection (Friendly, Formal, Professional, Casual)
 - [x] Persistent output via session state
 - [x] Copy support (code block with built-in copy button)

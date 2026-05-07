@@ -14,7 +14,7 @@ def render():
                 Your AI-Powered Assistant for<br/>Professional Communication
             </h1>
             <p style="font-size: 1.25rem; color: #888; max-width: 700px; margin: 0 auto 32px;">
-                Generate polished client replies, emails, task summaries, and daily reports in seconds.
+                Generate polished client replies, emails, meeting summaries, daily reports and more in seconds.
                 Built for virtual assistants, customer support teams, and busy professionals.
             </p>
         </div>
@@ -37,22 +37,31 @@ def render():
     st.write("")
 
     c1, c2, c3, c4 = st.columns(4)
-
     with c1:
         st.markdown("#### 💬 Client Reply")
         st.caption("Craft professional responses to client messages in any tone — friendly, formal, or casual.")
-
     with c2:
         st.markdown("#### 📧 Email Generator")
         st.caption("Turn rough notes into structured, polished emails ready to send.")
-
     with c3:
         st.markdown("#### 📋 Task Summary")
         st.caption("Condense messy notes into clear, actionable bullet points.")
-
     with c4:
         st.markdown("#### 📊 Daily Report")
         st.caption("Generate formatted end-of-day status reports with tasks, progress, and next steps.")
+
+    st.write("")
+
+    c5, c6, c7, _ = st.columns(4)
+    with c5:
+        st.markdown("#### 🗒️ Meeting Notes")
+        st.caption("Turn raw meeting notes into a structured summary with decisions and action items.")
+    with c6:
+        st.markdown("#### ↩️ Follow-up Email")
+        st.caption("Write a professional follow-up based on a previous conversation or proposal.")
+    with c7:
+        st.markdown("#### ✏️ Tone Rewriter")
+        st.caption("Rewrite any message in a different tone — make it more formal, friendly, or professional.")
 
     st.write("")
     st.write("")
@@ -63,73 +72,22 @@ def render():
     st.write("")
 
     step1, step2, step3 = st.columns(3)
-
     with step1:
         st.markdown("**1️⃣ Choose a Tool**")
-        st.caption("Pick from Client Reply, Email Generator, Task Summary, or Daily Report.")
-
+        st.caption("Pick from 7 tools covering replies, emails, summaries, reports, and more.")
     with step2:
         st.markdown("**2️⃣ Paste Your Input**")
         st.caption("Drop in the client message, notes, or task list you want to work with.")
-
     with step3:
         st.markdown("**3️⃣ Generate & Edit**")
-        st.caption("Get AI-generated output instantly. Edit, copy, or save to your history.")
+        st.caption("Get AI-generated output instantly. Edit, copy, export, or save to your history.")
 
     st.write("")
     st.write("")
 
-    # ── Pricing preview ────────────────────────────────────────────────────
-    st.markdown("---")
-    st.markdown("### 💰 Simple, Transparent Pricing")
-    st.write("")
-
-    free_col, pro_col = st.columns(2, gap="large")
-
-    with free_col:
-        st.markdown(
-            """
-            <div style="
-                border: 1px solid #333;
-                border-radius: 12px;
-                padding: 24px;
-                text-align: center;
-            ">
-                <h3 style="margin-top: 0;">Free</h3>
-                <p style="font-size: 2rem; font-weight: 700; margin: 16px 0;">$0<span style="font-size: 1rem; font-weight: 400;">/month</span></p>
-                <ul style="text-align: left; padding-left: 20px; color: #aaa; line-height: 1.8;">
-                    <li>10 generations per day</li>
-                    <li>All 4 tools included</li>
-                    <li>Generation history</li>
-                    <li>Light & dark themes</li>
-                </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with pro_col:
-        st.markdown(
-            """
-            <div style="
-                border: 2px solid #4F8EF7;
-                border-radius: 12px;
-                padding: 24px;
-                text-align: center;
-                background: linear-gradient(135deg, rgba(79, 142, 247, 0.05), rgba(79, 142, 247, 0.02));
-            ">
-                <h3 style="margin-top: 0; color: #4F8EF7;">Pro <span style="font-size: 0.75rem; background: #4F8EF7; color: white; padding: 2px 8px; border-radius: 4px;">Coming Soon</span></h3>
-                <p style="font-size: 2rem; font-weight: 700; margin: 16px 0;">$12<span style="font-size: 1rem; font-weight: 400;">/month</span></p>
-                <ul style="text-align: left; padding-left: 20px; color: #aaa; line-height: 1.8;">
-                    <li><strong>50+ generations per day</strong></li>
-                    <li>Export to .txt, .docx, .pdf</li>
-                    <li>Custom prompt templates</li>
-                    <li>Priority support</li>
-                </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    # ── Pricing preview — temporarily hidden ──────────────────────────────
+    # st.markdown("---")
+    # st.markdown("### 💰 Simple, Transparent Pricing")
 
     st.write("")
     st.write("")

@@ -65,4 +65,16 @@ def build_prompt(tool_name: str, text: str, tone_style: str, job_position: str =
             f"- Be concise and respectful of the recipient's time"
         )
 
+    elif tool_name == "Tone Rewriter":
+        return (
+            f"You are a professional {job_position}.\n"
+            f"Rewrite the following message in a {tone_style} tone.\n\n"
+            f"Original message:\n{text}\n\n"
+            f"Rules:\n"
+            f"- Keep the same meaning and key information\n"
+            f"- Only change the tone and wording\n"
+            f"- Do not add or remove facts\n"
+            f"- Match the length of the original as closely as possible"
+        )
+
     return text

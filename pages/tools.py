@@ -17,6 +17,7 @@ TOOLS = {
     "Daily Report":    {"icon": "📊", "desc": "Generate a formatted end-of-day status report."},
     "Meeting Notes":   {"icon": "🗒️", "desc": "Turn raw meeting notes into a structured summary with action items."},
     "Follow-up Email": {"icon": "↩️", "desc": "Write a professional follow-up based on a previous conversation."},
+    "Tone Rewriter":   {"icon": "✏️", "desc": "Rewrite any message in a different tone while keeping the same meaning."},
 }
 
 TONES = ["Friendly", "Formal", "Professional", "Casual"]
@@ -212,5 +213,6 @@ def _get_placeholder(tool: str) -> str:
         "Daily Report": "List your tasks and updates for today...\n\nE.g. Completed onboarding doc, reviewed 3 tickets, pending: client call tomorrow.",
         "Meeting Notes": "Paste your raw meeting notes here...\n\nE.g. Discussed Q2 targets. John to send report by Friday. Budget approved for new hire.",
         "Follow-up Email": "Describe the context of the previous interaction...\n\nE.g. Sent a proposal to Sarah last week about the website redesign project. No response yet.",
+        "Tone Rewriter": "Paste the message you want to rewrite...\n\nE.g. Hey, just checking if you got my last email. Need an answer ASAP.",
     }
     return placeholders.get(tool, "Enter your text here...")
