@@ -32,19 +32,6 @@
 - [x] Job position "Other" with custom text input
 - [x] Dynamic prompts based on user's job position
 
-## Security & Auth
-
-- [x] bcrypt password hashing
-- [x] Session timeout (auto-logout after 30 min inactivity)
-- [x] Rate limiting (50 generations/day per user)
-- [x] Brute-force protection (account lockout after 5 failed attempts)
-- [x] Password reset flow (email-based via AWS SES)
-- [x] Email verification on registration
-- [x] Resend verification email button
-- [x] Auto-verify on local dev (no SES needed)
-- [x] Admin role stored on user record (not hardcoded)
-- [x] Admin credentials via environment variables
-
 ## Code Quality
 
 - [x] Split single-file app into modules (config, prompts, ui, main)
@@ -88,13 +75,29 @@
 
 ## New Tools / Features
 
+- [x] Terms of Service page
+- [x] Welcome email on registration
+- [x] Usage Dashboard (separate page in navigation)
+- [x] Generation count persisted to DynamoDB (survives refresh/logout)
+- [x] Total generations lifetime counter
+- [x] Output widget fix (new input always generates fresh output)
 - [ ] Slack Message formatter
 - [ ] Multi-language output support
 - [ ] Custom prompt templates (user-defined)
-- [ ] Terms of Service page
-- [ ] Welcome email on registration
-- [ ] Usage dashboard on History page
 - [ ] **[Pro feature]** Persistent generation history across sessions (store in DynamoDB, load on login)
+
+## Security & Auth
+
+- [x] bcrypt password hashing
+- [x] Session timeout (auto-logout after 30 min inactivity)
+- [x] Rate limiting (10 generations/day for free users)
+- [x] Brute-force protection (account lockout after 5 failed attempts)
+- [x] Password reset flow (email-based via AWS SES)
+- [x] Email verification on registration
+- [x] Resend verification email button
+- [x] Auto-verify on local dev (no SES needed)
+- [x] Admin role stored on user record (not hardcoded)
+- [x] Admin credentials via environment variables
 
 ## Deployment & DevOps
 
