@@ -5,9 +5,10 @@ import streamlit as st
 from config import APP_NAME, APP_CAPTION
 from ui import init_session_state
 from theme import apply_theme
-from auth import render_auth_page, logout, get_remaining_generations, seed_default_users
+from auth import render_auth_page, logout, get_remaining_generations, seed_default_users, _get_user_profile
 from profile import init_profile_state
 from logger import get_logger
+from session_manager import save_session, load_session, clear_session, inject_session_reader
 
 log = get_logger("main")
 
@@ -30,6 +31,37 @@ if "admin_seeded" not in st.session_state:
 
 # Apply theme early so landing page is also themed
 apply_theme()
+
+# ─────────────────────────────────────────────
+# Session Restore — keep user logged in on refresh
+# ─────────────────────────────────────────────
+if not st.session_state.get("authenticated"):
+    email = load_session()
+    if email:
+        user_data = _get_user_profile(email)
+        if user_data and user_data.get("is_verified"):
+            from datetime import datetime
+            st.session_state.authenticated = True
+            st.session_state.email = email
+            st.session_state.username = email
+            st.session_state.job_position = user_data.get("job_position", "Virtual Assistant")
+            st.session_state.display_name = user_data.get("display_name", "")
+            st.session_state.is_admin = bool(user_data.get("is_admin", False))
+            st.session_state.show_landing = False
+            today = datetime.now().strftime("%Y-%m-%d")
+            stored_date = user_data.get("rate_limit_date", "")
+            if stored_date == today:
+                st.session_state.generation_count = int(user_data.get("generation_count", 0))
+            else:
+                st.session_state.generation_count = 0
+            st.session_state.rate_limit_date = today
+            st.session_state.total_generations = int(user_data.get("total_generations", 0))
+            st.session_state._count_loaded = True
+            st.session_state._session_checked = True
+            log.info("session_restored", extra={"email": email})
+            st.rerun()
+        else:
+            log.warning("session_restore_failed", extra={"email": email, "reason": "user not found or not verified"})
 
 # ─────────────────────────────────────────────
 # Password Reset Flow (via ?reset_token= param)
@@ -79,6 +111,11 @@ if "show_landing" not in st.session_state:
     st.session_state.show_landing = True
 
 if not st.session_state.get("authenticated") and st.session_state.show_landing:
+    # Still inject session reader on landing page so refresh works
+    if not st.session_state.get("_session_checked"):
+        inject_session_reader()
+        st.session_state._session_checked = True
+
     # Top nav bar for landing page
     nav_left, nav_right = st.columns([3, 1])
     with nav_left:

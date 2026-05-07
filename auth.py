@@ -220,9 +220,14 @@ def _save_generation_count(email: str, count: int, date: str, total: int = None)
 
 def check_rate_limit() -> tuple[bool, str]:
     """Check if the user has exceeded the daily generation limit.
+    Admins have unlimited generations.
     Loads count from storage and syncs to session state.
     Returns (allowed, message).
     """
+    # Admins have unlimited generations
+    if st.session_state.get("is_admin"):
+        return True, ""
+
     email = st.session_state.get("email", "")
     today = datetime.now().strftime("%Y-%m-%d")
 
@@ -610,10 +615,13 @@ def is_current_user_admin() -> bool:
 
 def logout():
     """Log out the current user."""
+    from session_manager import clear_session
+    clear_session()
     st.session_state.authenticated = False
     st.session_state.username = ""
     st.session_state.email = ""
     st.session_state.job_position = "Virtual Assistant"
+    st.session_state._session_checked = False
     st.rerun()
 
 
@@ -828,6 +836,9 @@ def render_auth_page():
                     st.session_state.rate_limit_date = today
                     st.session_state.total_generations = int(user_data.get("total_generations", 0))
                     st.session_state._count_loaded = True
+                    # Save session cookie so user stays logged in on refresh
+                    from session_manager import save_session
+                    save_session(login_email.lower())
                     st.rerun()
                 else:
                     st.error(message)
