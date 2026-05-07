@@ -19,7 +19,7 @@
 >
 > It's **free to try** — 10 generations per day, no credit card required.
 >
-> 👉 replydesk-ai.com
+> 👉 replydesk-ai.com/share
 >
 > Would love your feedback as I continue building. Drop a comment or DM me if you try it! 🙏
 >
@@ -38,7 +38,7 @@
 > → Daily reports
 > → Tone rewriter
 >
-> Free to try → replydesk-ai.com
+> Free to try → replydesk-ai.com/share
 >
 > Feedback welcome 🙏
 > #AI #VirtualAssistant #ProductivityTools
@@ -49,7 +49,7 @@
 
 > Hey everyone! 👋
 >
-> I just soft launched a free tool I built for VAs and professionals — **Replydesk AI** (replydesk-ai.com)
+> I just soft launched a free tool I built for VAs and professionals — **Replydesk AI** (replydesk-ai.com/share)
 >
 > It uses AI to help you write faster:
 > - Client replies
