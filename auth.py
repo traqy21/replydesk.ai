@@ -432,6 +432,8 @@ def _send_welcome_email(email: str):
             <li>🗒️ <strong>Meeting Notes</strong> — structure raw meeting notes</li>
             <li>↩️ <strong>Follow-up Email</strong> — write professional follow-ups</li>
             <li>✏️ <strong>Tone Rewriter</strong> — rewrite any message in a different tone</li>
+            <li>📌 <strong>Subject Line Generator</strong> — get 5 subject line options instantly</li>
+            <li>✂️ <strong>Message Shortener</strong> — shorten any message without losing key info</li>
         </ul>
         <p>You have <strong>10 free generations per day</strong> to get started.</p>
         <a href="{APP_URL}"

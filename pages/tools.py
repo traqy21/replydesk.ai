@@ -17,7 +17,9 @@ TOOLS = {
     "Daily Report":    {"icon": "📊", "desc": "Generate a formatted end-of-day status report."},
     "Meeting Notes":   {"icon": "🗒️", "desc": "Turn raw meeting notes into a structured summary with action items."},
     "Follow-up Email": {"icon": "↩️", "desc": "Write a professional follow-up based on a previous conversation."},
-    "Tone Rewriter":   {"icon": "✏️", "desc": "Rewrite any message in a different tone while keeping the same meaning."},
+    "Tone Rewriter":          {"icon": "✏️", "desc": "Rewrite any message in a different tone while keeping the same meaning."},
+    "Subject Line Generator": {"icon": "📌", "desc": "Generate 5 compelling subject line options for any email."},
+    "Message Shortener":      {"icon": "✂️", "desc": "Shorten any message while keeping all the key information."},
 }
 
 TONES = ["Friendly", "Formal", "Professional", "Casual"]
@@ -169,8 +171,8 @@ def render():
                     st.session_state.generated_result = edited
                     st.success("Saved!")
             with c2:
-                if st.button("📋 Copy", use_container_width=True, key="copy_btn"):
-                    st.code(st.session_state.generated_result, language="markdown")
+                # Real clipboard copy via JS
+                _copy_to_clipboard(edited, key=f"copy_{ov}")
             with c3:
                 st.download_button(
                     "⬇️ Export",
@@ -207,6 +209,52 @@ def render():
             )
 
 
+def _copy_to_clipboard(text: str, key: str = "copy"):
+    """Render a real copy-to-clipboard button using JS navigator.clipboard API."""
+    import streamlit.components.v1 as components
+    # Escape the text for safe JS embedding
+    escaped = text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
+    components.html(
+        f"""
+        <button onclick="
+            navigator.clipboard.writeText(`{escaped}`)
+                .then(() => {{
+                    this.innerText = '✅ Copied!';
+                    this.style.backgroundColor = '#22c55e';
+                    this.style.color = 'white';
+                    this.style.borderColor = '#22c55e';
+                    setTimeout(() => {{
+                        this.innerText = '📋 Copy';
+                        this.style.backgroundColor = '';
+                        this.style.color = '';
+                        this.style.borderColor = '';
+                    }}, 2000);
+                }})
+                .catch(() => {{
+                    this.innerText = '❌ Failed';
+                    setTimeout(() => {{ this.innerText = '📋 Copy'; }}, 2000);
+                }});
+        "
+        style="
+            width: 100%;
+            padding: 0.45rem 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 400;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(250,250,250,0.2);
+            background-color: transparent;
+            color: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+        "
+        onmouseover="this.style.borderColor='#4F8EF7'; this.style.backgroundColor='rgba(79,142,247,0.1)'"
+        onmouseout="this.style.borderColor='rgba(250,250,250,0.2)'; this.style.backgroundColor='transparent'"
+        >📋 Copy</button>
+        """,
+        height=40,
+    )
+
+
 def _get_placeholder(tool: str) -> str:
     """Return a contextual placeholder for the input area."""
     placeholders = {
@@ -217,5 +265,7 @@ def _get_placeholder(tool: str) -> str:
         "Meeting Notes": "Paste your raw meeting notes here...\n\nE.g. Discussed Q2 targets. John to send report by Friday. Budget approved for new hire.",
         "Follow-up Email": "Describe the context of the previous interaction...\n\nE.g. Sent a proposal to Sarah last week about the website redesign project. No response yet.",
         "Tone Rewriter": "Paste the message you want to rewrite...\n\nE.g. Hey, just checking if you got my last email. Need an answer ASAP.",
+        "Subject Line Generator": "Paste your email body or describe what the email is about...\n\nE.g. Following up on the proposal I sent last week about the website redesign project.",
+        "Message Shortener": "Paste the message you want to shorten...\n\nE.g. I wanted to reach out to you today to follow up on the conversation we had last Tuesday regarding the upcoming project timeline and whether or not the deliverables we discussed are still on track...",
     }
     return placeholders.get(tool, "Enter your text here...")

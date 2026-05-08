@@ -52,7 +52,7 @@ def render():
 
     st.write("")
 
-    c5, c6, c7, _ = st.columns(4)
+    c5, c6, c7, c8, c9 = st.columns(5)
     with c5:
         st.markdown("#### 🗒️ Meeting Notes")
         st.caption("Turn raw meeting notes into a structured summary with decisions and action items.")
@@ -61,7 +61,13 @@ def render():
         st.caption("Write a professional follow-up based on a previous conversation or proposal.")
     with c7:
         st.markdown("#### ✏️ Tone Rewriter")
-        st.caption("Rewrite any message in a different tone — make it more formal, friendly, or professional.")
+        st.caption("Rewrite any message in a different tone — more formal, friendly, or professional.")
+    with c8:
+        st.markdown("#### 📌 Subject Line Generator")
+        st.caption("Generate 5 compelling subject line options for any email instantly.")
+    with c9:
+        st.markdown("#### ✂️ Message Shortener")
+        st.caption("Shorten any message while keeping all the key information and meaning.")
 
     st.write("")
     st.write("")
@@ -74,7 +80,7 @@ def render():
     step1, step2, step3 = st.columns(3)
     with step1:
         st.markdown("**1️⃣ Choose a Tool**")
-        st.caption("Pick from 7 tools covering replies, emails, summaries, reports, and more.")
+        st.caption("Pick from 9 tools covering replies, emails, summaries, reports, and more.")
     with step2:
         st.markdown("**2️⃣ Paste Your Input**")
         st.caption("Drop in the client message, notes, or task list you want to work with.")

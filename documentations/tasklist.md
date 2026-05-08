@@ -89,10 +89,21 @@
 - [x] Generation count persisted to DynamoDB (survives refresh/logout)
 - [x] Total generations lifetime counter
 - [x] Output widget fix (new input always generates fresh output)
+- [x] Subject Line Generator tool
+- [x] Message Shortener tool
+- [x] Real copy-to-clipboard (JS navigator.clipboard API)
 - [ ] Slack Message formatter
+
+## Pro Features (Paid Tier — Future)
+
+- [ ] Unlimited generations per day
+- [ ] Export to .docx and .pdf
+- [ ] Persistent generation history across sessions (store in DynamoDB, load on login)
+- [ ] Custom prompt templates (save and reuse)
 - [ ] Multi-language output support
-- [ ] Custom prompt templates (user-defined)
-- [ ] **[Pro feature]** Persistent generation history across sessions (store in DynamoDB, load on login)
+- [ ] Team / shared workspace
+- [ ] Usage analytics dashboard (advanced)
+- [ ] Priority support
 
 ## Security & Auth
 
@@ -138,5 +149,16 @@
 - [x] Terraform README with deployment guide and cost breakdown
 - [x] Monetization strategy document
 - [x] Suggestions checklist
+- [x] Soft launch social media messages
 - [ ] Contributing guide
 - [ ] Changelog
+
+## SEO & Marketing
+
+- [ ] Submit to Google Search Console
+- [ ] Add keyword-rich static HTML page for crawlers at root
+- [ ] Create sitemap.xml and serve via nginx
+- [ ] Create robots.txt
+- [ ] Add sitemap and robots.txt to project files (preserved on deploy)
+- [ ] Post on VA Facebook groups and Reddit (r/VirtualAssistant, r/freelance)
+- [ ] Launch on Product Hunt

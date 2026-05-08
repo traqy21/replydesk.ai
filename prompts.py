@@ -77,4 +77,29 @@ def build_prompt(tool_name: str, text: str, tone_style: str, job_position: str =
             f"- Match the length of the original as closely as possible"
         )
 
+    elif tool_name == "Subject Line Generator":
+        return (
+            f"You are a professional {job_position}.\n"
+            f"Generate 5 compelling email subject lines for the following email content or context.\n\n"
+            f"{text}\n\n"
+            f"Rules:\n"
+            f"- Each subject line should be concise (under 60 characters)\n"
+            f"- Vary the style: one direct, one curiosity-driven, one benefit-focused, one urgent, one friendly\n"
+            f"- Number each option (1. 2. 3. 4. 5.)\n"
+            f"- Do not include explanations, just the subject lines"
+        )
+
+    elif tool_name == "Message Shortener":
+        return (
+            f"You are a professional {job_position}.\n"
+            f"Shorten the following message while keeping all key information and the same meaning.\n\n"
+            f"Original message:\n{text}\n\n"
+            f"Rules:\n"
+            f"- Remove filler words, redundancy, and unnecessary phrases\n"
+            f"- Keep the tone {tone_style}\n"
+            f"- Aim for 40-60% of the original length\n"
+            f"- Do not remove any important facts, requests, or context\n"
+            f"- Output only the shortened message, no explanations"
+        )
+
     return text
