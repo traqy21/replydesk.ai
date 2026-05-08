@@ -212,7 +212,11 @@ def render():
 def _copy_to_clipboard(text: str, key: str = "copy"):
     """Render a real copy-to-clipboard button using JS navigator.clipboard API."""
     import streamlit.components.v1 as components
-    escaped = text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
+    import json
+    import hashlib
+    # Unique ID per button instance
+    uid = hashlib.md5(text[:50].encode()).hexdigest()[:8]
+    safe_text = json.dumps(text)
     components.html(
         f"""
         <style>
@@ -236,33 +240,29 @@ def _copy_to_clipboard(text: str, key: str = "copy"):
                 gap: 6px;
                 transition: background-color 0.2s, border-color 0.2s;
             }}
-            .copy-btn:hover {{
-                background-color: #533483;
-                border-color: #533483;
-            }}
-            .copy-btn.success {{
-                background-color: #16a34a !important;
-                border-color: #16a34a !important;
-                color: white !important;
-            }}
+            .copy-btn:hover {{ background-color: #533483; border-color: #533483; }}
+            .copy-btn.success {{ background-color: #16a34a !important; border-color: #16a34a !important; color: white !important; }}
         </style>
-        <button class="copy-btn" id="copyBtn" onclick="
-            navigator.clipboard.writeText(`{escaped}`)
-                .then(() => {{
-                    const btn = document.getElementById('copyBtn');
-                    btn.classList.add('success');
-                    btn.innerHTML = '✅ Copied!';
-                    setTimeout(() => {{
-                        btn.classList.remove('success');
-                        btn.innerHTML = '📋 Copy';
-                    }}, 2000);
-                }})
-                .catch(() => {{
-                    const btn = document.getElementById('copyBtn');
-                    btn.innerHTML = '❌ Failed';
-                    setTimeout(() => {{ btn.innerHTML = '📋 Copy'; }}, 2000);
+        <button class="copy-btn" id="btn_{uid}">📋 Copy</button>
+        <script>
+            (function() {{
+                var text = {safe_text};
+                var btn = document.getElementById('btn_{uid}');
+                btn.addEventListener('click', function() {{
+                    navigator.clipboard.writeText(text).then(function() {{
+                        btn.classList.add('success');
+                        btn.innerHTML = '✅ Copied!';
+                        setTimeout(function() {{
+                            btn.classList.remove('success');
+                            btn.innerHTML = '📋 Copy';
+                        }}, 2000);
+                    }}).catch(function() {{
+                        btn.innerHTML = '❌ Failed';
+                        setTimeout(function() {{ btn.innerHTML = '📋 Copy'; }}, 2000);
+                    }});
                 }});
-        ">📋 Copy</button>
+            }})();
+        </script>
         """,
         height=46,
     )
