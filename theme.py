@@ -9,6 +9,11 @@ DARK_THEME_CSS = """
         background-color: #1a1a2e;
         color: #e0e0e0;
     }
+    /* Force all text elements to light color in dark mode */
+    .stMarkdown, p, h1, h2, h3, h4, h5, h6, label, span, div,
+    .stCaption, small, [data-testid="stCaptionContainer"] p {
+        color: #e0e0e0 !important;
+    }
     .stTextArea textarea {
         background-color: #16213e;
         color: #e0e0e0;
@@ -18,20 +23,44 @@ DARK_THEME_CSS = """
         background-color: #16213e;
         color: #e0e0e0;
     }
-    .stButton > button {
-        background-color: #0f3460;
-        color: #e0e0e0;
-        border: 1px solid #533483;
+    /* Secondary buttons */
+    .stButton > button[kind="secondary"] {
+        background-color: #0f3460 !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #533483 !important;
     }
-    .stButton > button:hover {
-        background-color: #533483;
-        border-color: #533483;
+    .stButton > button[kind="secondary"]:hover {
+        background-color: #533483 !important;
+        border-color: #533483 !important;
+        color: #e0e0e0 !important;
+    }
+    /* Primary buttons — brighter to stand out */
+    .stButton > button[kind="primary"] {
+        background-color: #4F8EF7 !important;
+        color: #ffffff !important;
+        border: 1px solid #4F8EF7 !important;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background-color: #3a7de0 !important;
+        border-color: #3a7de0 !important;
+        color: #ffffff !important;
+    }
+    .stButton > button[kind="primary"] p,
+    .stButton > button[kind="primary"] span,
+    .stButton > button[kind="primary"] div {
+        color: #ffffff !important;
     }
     section[data-testid="stSidebar"] {
         background-color: #16213e;
     }
     section[data-testid="stSidebar"] .stMarkdown {
         color: #e0e0e0;
+    }
+    .stMetric label {
+        color: #888888 !important;
+    }
+    .stMetric [data-testid="stMetricValue"] {
+        color: #e0e0e0 !important;
     }
 </style>
 """
