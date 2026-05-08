@@ -863,31 +863,37 @@ def render_auth_page():
                 st.rerun()
 
         with tab_register:
-            reg_email = st.text_input("Email Address", key="reg_email", placeholder="you@example.com")
-            reg_job = st.selectbox("Job Position", JOB_POSITIONS, key="reg_job")
+            rk = st.session_state.get("reg_form_key", 0)
+            reg_email = st.text_input("Email Address", key=f"reg_email_{rk}", placeholder="you@example.com")
+            reg_job = st.selectbox("Job Position", JOB_POSITIONS, key=f"reg_job_{rk}")
             if reg_job == "Other":
                 reg_job_other = st.text_input(
                     "Please specify your job position",
-                    key="reg_job_other",
+                    key=f"reg_job_other_{rk}",
                     placeholder="e.g. Legal Assistant, Translator...",
                 )
             else:
                 reg_job_other = ""
-            reg_password = st.text_input("Password", type="password", key="reg_password", placeholder="Min. 6 characters")
-            reg_confirm = st.text_input("Confirm Password", type="password", key="reg_confirm", placeholder="Repeat password")
+            reg_password = st.text_input("Password", type="password", key=f"reg_password_{rk}", placeholder="Min. 6 characters")
+            reg_confirm = st.text_input("Confirm Password", type="password", key=f"reg_confirm_{rk}", placeholder="Repeat password")
 
             st.write("")
-            if st.button("Create Account", use_container_width=True, key="register_btn", type="primary"):
+            if st.button("Create Account", use_container_width=True, key=f"register_btn_{rk}", type="primary"):
                 final_job = reg_job_other.strip() if reg_job == "Other" else reg_job
                 if reg_job == "Other" and not reg_job_other.strip():
                     st.error("Please specify your job position.")
                 else:
                     success, message = register_user(reg_email, final_job, reg_password, reg_confirm)
                     if success:
-                        st.success(message)
-                        st.info("👉 Switch to the **Login** tab to sign in.")
+                        st.session_state.reg_form_key = rk + 1
+                        st.session_state.reg_success_msg = message
+                        st.rerun()
                     else:
                         st.error(message)
+
+            if st.session_state.get("reg_success_msg"):
+                st.success(st.session_state.reg_success_msg)
+                st.info("👉 Switch to the **Login** tab to sign in.")
 
             st.caption(
                 "By creating an account you agree to our "
