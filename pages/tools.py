@@ -212,46 +212,59 @@ def render():
 def _copy_to_clipboard(text: str, key: str = "copy"):
     """Render a real copy-to-clipboard button using JS navigator.clipboard API."""
     import streamlit.components.v1 as components
-    # Escape the text for safe JS embedding
     escaped = text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
     components.html(
         f"""
-        <button onclick="
+        <style>
+            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            body {{ margin: 0; padding: 0; background: transparent; }}
+            .copy-btn {{
+                width: 100%;
+                height: 38px;
+                padding: 0 0.75rem;
+                font-size: 0.875rem;
+                font-family: "Source Sans Pro", sans-serif;
+                font-weight: 400;
+                border-radius: 0.5rem;
+                border: 1px solid rgba(250,250,250,0.2);
+                background-color: #0f3460;
+                color: #e0e0e0;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                transition: background-color 0.2s, border-color 0.2s;
+            }}
+            .copy-btn:hover {{
+                background-color: #533483;
+                border-color: #533483;
+            }}
+            .copy-btn.success {{
+                background-color: #16a34a !important;
+                border-color: #16a34a !important;
+                color: white !important;
+            }}
+        </style>
+        <button class="copy-btn" id="copyBtn" onclick="
             navigator.clipboard.writeText(`{escaped}`)
                 .then(() => {{
-                    this.innerText = '✅ Copied!';
-                    this.style.backgroundColor = '#22c55e';
-                    this.style.color = 'white';
-                    this.style.borderColor = '#22c55e';
+                    const btn = document.getElementById('copyBtn');
+                    btn.classList.add('success');
+                    btn.innerHTML = '✅ Copied!';
                     setTimeout(() => {{
-                        this.innerText = '📋 Copy';
-                        this.style.backgroundColor = '';
-                        this.style.color = '';
-                        this.style.borderColor = '';
+                        btn.classList.remove('success');
+                        btn.innerHTML = '📋 Copy';
                     }}, 2000);
                 }})
                 .catch(() => {{
-                    this.innerText = '❌ Failed';
-                    setTimeout(() => {{ this.innerText = '📋 Copy'; }}, 2000);
+                    const btn = document.getElementById('copyBtn');
+                    btn.innerHTML = '❌ Failed';
+                    setTimeout(() => {{ btn.innerHTML = '📋 Copy'; }}, 2000);
                 }});
-        "
-        style="
-            width: 100%;
-            padding: 0.45rem 0.5rem;
-            font-size: 0.875rem;
-            font-weight: 400;
-            border-radius: 0.5rem;
-            border: 1px solid rgba(250,250,250,0.2);
-            background-color: transparent;
-            color: inherit;
-            cursor: pointer;
-            transition: all 0.2s;
-        "
-        onmouseover="this.style.borderColor='#4F8EF7'; this.style.backgroundColor='rgba(79,142,247,0.1)'"
-        onmouseout="this.style.borderColor='rgba(250,250,250,0.2)'; this.style.backgroundColor='transparent'"
-        >📋 Copy</button>
+        ">📋 Copy</button>
         """,
-        height=40,
+        height=46,
     )
 
 
