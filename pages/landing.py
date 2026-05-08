@@ -107,7 +107,7 @@ def render():
                 border-radius: 8px;
                 padding: 16px;
                 font-style: italic;
-                color: #0a000f;
+                color: #6d6671;
             ">
                 "This tool saves me at least 30 minutes every day. I can reply to clients faster and sound more professional."
                 <br/><br/>
@@ -125,7 +125,7 @@ def render():
                 border-radius: 8px;
                 padding: 16px;
                 font-style: italic;
-                color: #0a000f;
+                color: #6d6671;
             ">
                 "The daily report feature is a game-changer. I used to spend 15 minutes writing updates — now it's done in seconds."
                 <br/><br/>
@@ -143,7 +143,7 @@ def render():
                 border-radius: 8px;
                 padding: 16px;
                 font-style: italic;
-                color: #0a000f;
+                color: #6d6671;
             ">
                 "Simple, fast, and exactly what I needed. No bloat, just results."
                 <br/><br/>
