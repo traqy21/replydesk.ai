@@ -837,6 +837,8 @@ def render_auth_page():
                     st.session_state.rate_limit_date = today
                     st.session_state.total_generations = int(user_data.get("total_generations", 0))
                     st.session_state._count_loaded = True
+                    # Load saved theme preference
+                    st.session_state.theme = user_data.get("theme", "Dark")
                     # Save session cookie so user stays logged in on refresh
                     from session_manager import save_session
                     save_session(login_email.lower())

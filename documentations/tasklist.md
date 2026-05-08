@@ -55,6 +55,14 @@
 - [x] Privacy policy page
 - [x] Favicon set to app logo
 - [x] Custom color theme (indigo-blue, no harsh red)
+- [x] Light theme — clean modern design (indigo palette)
+- [x] Dark logo variant for light theme
+- [x] Primary button white text on light theme
+- [x] Download button styled consistently
+- [x] Caption text darkened on light theme
+- [x] Placeholder text visible on light theme
+- [x] Hide "Press Enter to apply" hint on inputs
+- [x] Session persistence — stay logged in on refresh (server-side session + ?sid=)
 
 ## Pages & Navigation
 

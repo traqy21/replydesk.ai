@@ -58,6 +58,8 @@ if not st.session_state.get("authenticated"):
             st.session_state.total_generations = int(user_data.get("total_generations", 0))
             st.session_state._count_loaded = True
             st.session_state._session_checked = True
+            # Load saved theme preference
+            st.session_state.theme = user_data.get("theme", "Dark")
             log.info("session_restored", extra={"email": email})
             st.rerun()
         else:
@@ -184,6 +186,13 @@ theme = st.sidebar.radio(
 )
 if theme != st.session_state.theme:
     st.session_state.theme = theme
+    # Save preference to user record
+    from auth import _get_user_profile, _persist_user
+    email = st.session_state.get("email", "")
+    if email:
+        user_data = _get_user_profile(email)
+        user_data["theme"] = theme
+        _persist_user(user_data)
     st.rerun()
 
 st.sidebar.divider()
