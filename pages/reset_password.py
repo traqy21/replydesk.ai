@@ -90,7 +90,8 @@ def render_reset_form(token: str):
 
 def render(token: str = ""):
     """Render the appropriate reset page based on whether a token is present."""
-    st.image("assets/logo-wide.svg", use_container_width=False, width=300)
+    from theme import get_logo
+    st.image(get_logo(), use_container_width=False, width=300)
 
     if token:
         render_reset_form(token)

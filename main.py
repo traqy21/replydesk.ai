@@ -4,7 +4,7 @@ import streamlit as st
 
 from config import APP_NAME, APP_CAPTION
 from ui import init_session_state
-from theme import apply_theme
+from theme import apply_theme, get_logo
 from auth import render_auth_page, logout, get_remaining_generations, seed_default_users, _get_user_profile
 from profile import init_profile_state
 from logger import get_logger
@@ -119,7 +119,7 @@ if not st.session_state.get("authenticated") and st.session_state.show_landing:
     # Top nav bar for landing page
     nav_left, nav_right = st.columns([3, 1])
     with nav_left:
-        st.image("assets/logo-wide.svg", width=160)
+        st.image(get_logo(), width=160)
     with nav_right:
         if st.button("🔑 Log In / Register", use_container_width=True, key="nav_login_btn"):
             st.session_state.show_landing = False
@@ -141,7 +141,7 @@ if not render_auth_page():
 # ─────────────────────────────────────────────
 
 # Header
-st.sidebar.image("assets/logo-wide.svg", use_container_width=True)
+st.sidebar.image(get_logo(), use_container_width=True)
 
 # Navigation (top priority — immediately accessible)
 PAGES = ["🛠️ Tools", "📊 Dashboard", "📜 History", "💬 Feedback", "⚙️ Settings"]

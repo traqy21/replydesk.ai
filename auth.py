@@ -803,7 +803,8 @@ def render_auth_page():
     _, col, _ = st.columns([1, 1.4, 1])
 
     with col:
-        st.image("assets/logo-wide.svg", use_container_width=True)
+        from theme import get_logo
+        st.image(get_logo(), use_container_width=True)
         # st.caption("Your AI-powered assistant for professional communication")
         st.write("")
 

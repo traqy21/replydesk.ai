@@ -6,7 +6,8 @@ from auth import verify_email_token
 
 def render(token: str):
     """Render the email verification result page."""
-    st.image("assets/logo-wide.svg", use_container_width=False, width=300)
+    from theme import get_logo
+    st.image(get_logo(), use_container_width=False, width=300)
     st.write("")
 
     _, col, _ = st.columns([1, 1.4, 1])

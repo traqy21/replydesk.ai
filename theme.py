@@ -38,12 +38,134 @@ DARK_THEME_CSS = """
 
 LIGHT_THEME_CSS = """
 <style>
-    /* Light theme — mostly Streamlit defaults with minor tweaks */
+    /* Light theme — clean, modern, professional */
+    .stApp {
+        background-color: #F5F5FC !important;
+        color: #0F172A !important;
+    }
+    .block-container {
+        background-color: #F5F5FC !important;
+    }
+    section[data-testid="stSidebar"] {
+        background-color: #F8FAFC !important;
+        border-right: 1px solid #E2E8F0 !important;
+    }
+    section[data-testid="stSidebar"] * {
+        color: #0F172A !important;
+    }
+    .stTextArea textarea {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border-color: #E2E8F0 !important;
+        border-radius: 8px !important;
+    }
+    .stTextInput input {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border-color: #E2E8F0 !important;
+        border-radius: 8px !important;
+    }
+    .stTextInput input::placeholder {
+        color: #94A3B8 !important;
+        opacity: 1 !important;
+    }
+    .stTextArea textarea::placeholder {
+        color: #94A3B8 !important;
+        opacity: 1 !important;
+    }
+    .stSelectbox > div > div {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border-color: #E2E8F0 !important;
+        border-radius: 8px !important;
+    }
     .stButton > button {
-        border: 1px solid #ddd;
+        border: 1px solid #E2E8F0 !important;
+        color: #0F172A !important;
+        background-color: #FFFFFF !important;
+        border-radius: 8px !important;
     }
     .stButton > button:hover {
-        border-color: #4F8EF7;
+        border-color: #4F46E5 !important;
+        background-color: #EEF2FF !important;
+        color: #4F46E5 !important;
+    }
+    .stButton > button[kind="primary"] {
+        background-color: #4F46E5 !important;
+        color: #FFFFFF !important;
+        border-color: #4F46E5 !important;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background-color: #4338CA !important;
+        border-color: #4338CA !important;
+        color: #FFFFFF !important;
+    }
+    /* Also target active/selected state */
+    .stButton > button[kind="primary"] p,
+    .stButton > button[kind="primary"] span,
+    .stButton > button[kind="primary"] div {
+        color: #FFFFFF !important;
+    }
+    /* Download button */
+    .stDownloadButton > button {
+        border: 1px solid #E2E8F0 !important;
+        color: #0F172A !important;
+        background-color: #FFFFFF !important;
+        border-radius: 8px !important;
+    }
+    .stDownloadButton > button:hover {
+        border-color: #4F46E5 !important;
+        background-color: #EEF2FF !important;
+        color: #4F46E5 !important;
+    }
+    .stMarkdown, p, h1, h2, h3, h4, h5, h6, label {
+        color: #0F172A !important;
+    }
+    .stMetric label {
+        color: #64748B !important;
+    }
+    .stMetric [data-testid="stMetricValue"] {
+        color: #0F172A !important;
+    }
+    [data-testid="stExpander"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 8px !important;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #EEF2FF !important;
+        border-radius: 8px !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: #64748B !important;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #4F46E5 !important;
+    }
+    div[data-testid="stCodeBlock"] {
+        background-color: #F8FAFC !important;
+        border: 1px solid #E2E8F0 !important;
+    }
+    .stInfo, [data-testid="stInfo"] {
+        background-color: #EEF2FF !important;
+        border-color: #4F46E5 !important;
+    }
+    .stSuccess, [data-testid="stSuccess"] {
+        background-color: #F0FDF4 !important;
+    }
+    .stError, [data-testid="stError"] {
+        background-color: #FEF2F2 !important;
+    }
+    .stWarning, [data-testid="stWarning"] {
+        background-color: #FFFBEB !important;
+    }
+    /* Caption / secondary text */
+    .stCaption, small, [data-testid="stCaptionContainer"] p {
+        color: #0a000f !important;
+    }
+    /* Divider */
+    hr {
+        border-color: #E2E8F0 !important;
     }
 </style>
 """
@@ -55,11 +177,17 @@ RESPONSIVE_CSS = """
         display: none !important;
     }
 
+    /* Hide "Press Enter to apply" hint on text inputs */
+    .stTextInput div[data-testid="InputInstructions"] {
+        display: none !important;
+    }
+
     /* ── Hamburger button — make it prominent and easy to tap ── */
     button[data-testid="collapsedControl"] {
         background-color: #4F8EF7 !important;
         border-radius: 50% !important;
         width: 44px !important;
+
         height: 44px !important;
         display: flex !important;
         align-items: center !important;
@@ -112,6 +240,13 @@ RESPONSIVE_CSS = """
     }
 </style>
 """
+
+
+def get_logo() -> str:
+    """Return the appropriate logo path based on current theme."""
+    if st.session_state.get("theme") == "Light":
+        return "assets/logo-wide-dark.svg"
+    return "assets/logo-wide.svg"
 
 
 def apply_theme():
